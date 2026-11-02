@@ -9,7 +9,12 @@ import "./interaction-lock.css";
 
 gsap.registerPlugin(ScrollToPlugin, CustomEase);
 // Signature "silky" ease: fast commit out of the gate, long graceful settle.
-try { CustomEase.create("silk", "0.16, 1, 0.3, 1, 0.55, 0.995, 1, 1"); } catch {}
+// Standard cubic-bezier format (4 values: x1, y1, x2, y2)
+try {
+  CustomEase.create("silk", "M0,0 C0.16,1 0.3,1 1,1");
+} catch (e) {
+  console.error("[intro] CustomEase.create('silk') failed:", e);
+}
 
 /*
  * 15-agent construction tour over the REAL portfolio.
@@ -496,6 +501,11 @@ function buildTimeline() {
     });
   };
   tl.to(orbit, { rot: ORBIT.turnsOnSync, duration: TIMINGS.sync, ease: "power2.out", onUpdate: updateOrbit }, syncAt);
+  // Continuous slow orbit through the hold: the loading screen must show the
+  // formation circling the S, never a frozen ring. Constant angular velocity
+  // (ease "none") carries straight into the break, where each arrow's
+  // dispatch flight chains lazily from its current slot position.
+  tl.to(orbit, { rot: ORBIT.turnsOnSync + ORBIT.turnsOnHold, duration: TIMINGS.hold, ease: "none", onUpdate: updateOrbit }, holdAt);
   tl.to(".s-ring.r2", { rotation: 40, duration: TIMINGS.sync, ease: "power1.inOut" }, syncAt);
   tl.to(".s-letter", { stroke: "#ff8568", duration: 0.5, ease: "power1.inOut", yoyo: true, repeat: 1 }, syncAt + 0.1);
   tl.call(() => SFX.thump(), null, holdAt);
@@ -902,6 +912,7 @@ export async function startIntro() {
   window.addEventListener("resize", onResize);
   window.__intro = {
     seek: (labelOrTime) => {
+      if (!tl || finished) return; // one-way: after teardown the overlay is gone
       const target = typeof labelOrTime === "string" ? (tl.labels[labelOrTime] ?? 0) : labelOrTime;
       tl.time(clamp(target, 0, tl.duration()));
       setPanel();

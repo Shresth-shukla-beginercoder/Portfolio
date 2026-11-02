@@ -24,3 +24,6 @@ scripts/shots/
 
 # OS specific
 .DS_Store
+
+# Claude Code
+.claude/

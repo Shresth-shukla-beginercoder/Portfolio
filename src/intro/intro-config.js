@@ -11,5 +11,7 @@ export const TIMINGS = {
 };
 
 export const ORBIT = {
-  turnsOnSync: 0.06, // subtle ring rotation applied during synchronization
+  turnsOnSync: 0.06, // ring rotation while agents lock into formation
+  turnsOnHold: 0.12,  // continuous slow orbit through the hold — the loading
+                      // screen shows arrows circling the S, never a frozen ring
 };
