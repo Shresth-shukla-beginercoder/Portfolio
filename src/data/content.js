@@ -129,8 +129,11 @@ export const ACHIEVEMENTS = [
 ];
 
 export const NAV = [
-  { id: "hero", label: "01 / Home" },
-  { id: "projects", label: "02 / Work" },
-  { id: "skills", label: "03 / Skills" },
-  { id: "contact", label: "04 / Contact" },
+  { id: "hero", label: "Home" },
+  { id: "about", label: "About" },
+  { id: "skills", label: "Skills" },
+  { id: "projects", label: "Projects" },
+  { id: "experience", label: "Experience" },
+  { id: "certifications", label: "Certifications" },
+  { id: "contact", label: "Contact" },
 ];
