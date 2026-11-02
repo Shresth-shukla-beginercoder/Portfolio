@@ -29,7 +29,10 @@ export const PROJECTS = [
     tags: ["Python", "Flask", "Pandas", "Plotly", "MCP"],
     year: "2026",
     image: "/src/assets/images/projects/sales-analytics.svg",
-    link: `${GH}/sales-analytics-project`,
+    repoUrl: `${GH}/sales-analytics-project`,
+    // Local Python/Flask app — no public deployment yet.
+    // TODO(content): add liveUrl here when Sales Analytics gets deployed.
+    liveUrl: null,
   },
   {
     id: "p-02",
@@ -38,8 +41,8 @@ export const PROJECTS = [
     tags: ["JavaScript", "React", "Vercel"],
     year: "2026",
     image: "/src/assets/images/projects/meditrack.jpg",
-    link: "https://medi-track-lake-two.vercel.app",
-    repo: `${GH}/MediTrack`,
+    repoUrl: `${GH}/MediTrack`,
+    liveUrl: "https://medi-track-lake-two.vercel.app",
   },
   {
     id: "p-03",
@@ -48,8 +51,8 @@ export const PROJECTS = [
     tags: ["JavaScript", "Node", "Express", "PostgreSQL", "MCP"],
     year: "2026",
     image: "/src/assets/images/projects/yelpcamp.jpg",
-    link: "https://yelp-camp-tau-mocha.vercel.app/",
-    repo: `${GH}/YelpCamp`,
+    repoUrl: `${GH}/YelpCamp`,
+    liveUrl: "https://yelp-camp-tau-mocha.vercel.app/",
   },
   {
     id: "p-04",
@@ -58,7 +61,9 @@ export const PROJECTS = [
     tags: ["Python", "MCP", "Agentic AI", "LLM"],
     year: "2026",
     image: "/src/assets/images/projects/mcp-agentic.svg",
-    link: `${GH}/MCP_Master`,
+    repoUrl: `${GH}/MCP_Master`,
+    // Experiments live in the repository; no deployed app.
+    liveUrl: null,
   },
 ];
 

@@ -20,14 +20,23 @@ export default function Projects() {
                 {p.title} <ArrowUpRight size={18} className="text-[#ff5a3c]" />
               </h3>
               <p data-layer={`projects.card.${i}.desc`} data-owner="5" data-kind="type" className="text-gray-400 mb-4">{p.blurb}</p>
-              <div data-layer={`projects.card.${i}.tags`} data-owner="12" data-kind="card" className="flex flex-wrap gap-2">
+              <div data-layer={`projects.card.${i}.tags`} data-owner="12" data-kind="card" className="flex flex-wrap gap-2 mb-4">
                 {p.tags.map((t) => (
                   <span key={t} className="text-xs px-3 py-1 border border-white/10 rounded-full text-gray-300">{t}</span>
                 ))}
               </div>
-              <a data-layer={`projects.card.${i}.link`} data-owner="11" data-kind="button" href={p.link} target="_blank" rel="noreferrer" className="text-xs text-[#ff5a3c] underline underline-offset-4" data-hoverable>
-                View repository →
-              </a>
+              <div className="flex items-center gap-4">
+                {p.repoUrl && (
+                  <a data-layer={`projects.card.${i}.repo`} data-owner="11" data-kind="button" href={p.repoUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#ff5a3c] underline underline-offset-4 hover:text-[#ff8568] transition-colors" data-hoverable>
+                    View Repository →
+                  </a>
+                )}
+                {p.liveUrl && (
+                  <a data-layer={`projects.card.${i}.live`} data-owner="11" data-kind="button" href={p.liveUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#ff5a3c] underline underline-offset-4 hover:text-[#ff8568] transition-colors" data-hoverable>
+                    Live Demo →
+                  </a>
+                )}
+              </div>
             </div>
           </article>
         ))}
