@@ -181,6 +181,12 @@ export function sting() {
   });
 }
 
+export function stopAll() {
+  if (!ctx) return;
+  master.gain.setValueAtTime(0, ctx.currentTime);
+  ambientOn = false;
+}
+
 /* ---------- controls ---------- */
 export function duck() {
   if (!master) return;

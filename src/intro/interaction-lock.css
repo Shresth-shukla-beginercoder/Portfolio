@@ -1,0 +1,11 @@
+
+# Interaction Blocker
+.intro-interaction-lock {
+  pointer-events: none !important;
+  touch-action: none !important;
+}
+
+/* Allow clicks only on panel buttons */
+#agent-overlay .ap-button {
+  pointer-events: auto !important;
+}

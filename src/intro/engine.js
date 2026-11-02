@@ -614,6 +614,7 @@ function teardown(animated) {
   const overlay = $("agent-overlay");
   // Release the site: un-hide layers, clear the planned scroll, re-arm Lenis.
   document.documentElement.removeAttribute("data-intro");
+  document.documentElement.classList.remove("intro-interaction-lock");
   document.querySelectorAll(".layer-built").forEach((el) => el.classList.remove("layer-built"));
   document.querySelectorAll("[data-skill-bar]").forEach((b) => gsap.set(b, { clearProps: "transform" }));
   window.__lenis?.start?.();
@@ -735,10 +736,12 @@ export async function startIntro() {
 
   // Pause Lenis for the whole tour so the single scroll driver owns it.
   window.__lenis?.stop?.();
+  document.documentElement.classList.add("intro-interaction-lock");
   tl.play();
 }
 
 export function revealNow() {
+  document.documentElement.classList.remove("intro-interaction-lock");
   $("agent-overlay")?.remove();
   document.documentElement.removeAttribute("data-intro");
   document.querySelectorAll(".layer-built").forEach((el) => el.classList.remove("layer-built"));
