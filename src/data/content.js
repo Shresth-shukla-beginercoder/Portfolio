@@ -105,19 +105,19 @@ export const CERTIFICATIONS = [
     title: "Generative AI, Deep Learning & Language Models — Virtual Internship",
     issuer: "EduSkills Foundation",
     year: "2026",
-    image: "/src/assets/images/credentials/eduskill-ai.png",
+    image: "/src/assets/images/eduskill-ai.png",
   },
   {
     title: "Java Full Stack Developer — Virtual Internship",
     issuer: "EduSkills Foundation",
     year: "2026",
-    image: "/src/assets/images/credentials/eduskill-java.png",
+    image: "/src/assets/images/eduskill-java.png",
   },
   {
     title: "The Web Developer Bootcamp 2026",
     issuer: "Udemy · Colt Steele",
     year: "2026",
-    image: "/src/assets/images/credentials/udemy-webdev.jpg",
+    image: "/src/assets/images/udemy-webdev.jpg",
   },
 ];
 
