@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { CERTIFICATIONS } from "../data/content.js";
 import { Award } from "lucide-react";
+import CertificateLightbox from "./CertificateLightbox";
 
 export default function Certifications() {
+  const [selectedCert, setSelectedCert] = useState(null);
+
   return (
     <section id="certifications" className="px-8 md:px-20 py-28 max-w-6xl mx-auto">
       <div data-section-title data-layer="certifications.title" data-owner="4" data-kind="type" className="mb-12">
@@ -12,21 +16,27 @@ export default function Certifications() {
         {CERTIFICATIONS.map((c, i) => (
           <div
             key={c.title}
+            onClick={() => setSelectedCert(c)}
             data-layer={`certifications.card.${i}`}
             data-owner="12"
             data-kind="card"
-            className="flex flex-col border border-white/10 bg-[#10131b] overflow-hidden hover:border-[#ff5a3c]/40 transition-colors"
+            className="flex flex-col border border-white/10 bg-[#10131b] overflow-hidden hover:border-[#ff5a3c]/40 transition-colors cursor-pointer group"
           >
             {c.image && (
-              <img
-                src={c.image}
-                alt={c.title}
-                data-layer={`certifications.card.${i}.img`}
-                data-owner="8"
-                data-kind="image"
-                loading="lazy"
-                className="w-full h-44 object-contain bg-[#0b0d13] border-b border-white/10"
-              />
+              <div className="relative overflow-hidden">
+                <img
+                  src={c.image}
+                  alt={c.title}
+                  data-layer={`certifications.card.${i}.img`}
+                  data-owner="8"
+                  data-kind="image"
+                  loading="lazy"
+                  className="w-full h-44 object-contain bg-[#0b0d13] border-b border-white/10 group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-[#ff5a3c]/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="bg-black/80 px-3 py-1 rounded text-xs text-white">View Certificate</span>
+                </div>
+              </div>
             )}
             <div data-layer={`certifications.card.${i}.meta`} data-owner="6" data-kind="type" className="flex items-start gap-4 p-6">
               <Award className="text-[#ff5a3c] mt-1 shrink-0" size={22} />
@@ -38,6 +48,9 @@ export default function Certifications() {
           </div>
         ))}
       </div>
+      {selectedCert && (
+        <CertificateLightbox cert={selectedCert} onClose={() => setSelectedCert(null)} />
+      )}
     </section>
   );
 }
