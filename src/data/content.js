@@ -10,7 +10,7 @@ export const PROFILE = {
   about:
     "I'm a fourth-year B.Tech Computer Science & Engineering student specializing in Artificial Intelligence and Machine Learning at ITM GIDA, Gorakhpur. I'm primarily focused on full-stack web development — building web applications across frontend and backend, REST APIs, databases, authentication and deployment. Beyond the core stack I'm exploring Model Context Protocol (MCP) and AI-powered applications, and I have a foundation in Python-based data analytics and visualization. I'm looking for full-stack developer opportunities where I can contribute to real-world applications and keep growing.",
   location: "Gorakhpur, India",
-  photo: "/src/assets/images/portrait.jpg",
+  photo: "/portrait.jpg",
 };
 
 export const SOCIALS = {
@@ -28,7 +28,7 @@ export const PROJECTS = [
     blurb: "Sales data cleaning, EDA and an interactive data-analysis & visualization web app built with Python + Flask, plus an MCP chatbot.",
     tags: ["Python", "Flask", "Pandas", "Plotly", "MCP"],
     year: "2026",
-    image: "/src/assets/images/projects/sales-analytics.svg",
+    image: "/sales-analytics.svg",
     repoUrl: `${GH}/sales-analytics-project`,
     liveUrl: "https://sales-analytics-project-2fjs.onrender.com/",
   },
@@ -38,7 +38,7 @@ export const PROJECTS = [
     blurb: "Full-stack medication & health tracking app, built with JavaScript and deployed live.",
     tags: ["JavaScript", "React", "Vercel"],
     year: "2026",
-    image: "/src/assets/images/projects/meditrack.jpg",
+    image: "/meditrack.jpg",
     repoUrl: `${GH}/MediTrack`,
     liveUrl: "https://medi-track-lake-two.vercel.app",
   },
@@ -48,7 +48,7 @@ export const PROJECTS = [
     blurb: "Full-stack camping & local-discovery platform with AI + MCP integration — search, browse and review spots, built on Node + Express + PostgreSQL.",
     tags: ["JavaScript", "Node", "Express", "PostgreSQL", "MCP"],
     year: "2026",
-    image: "/src/assets/images/projects/yelpcamp.jpg",
+    image: "/yelpcamp.jpg",
     repoUrl: `${GH}/YelpCamp`,
     liveUrl: "https://yelp-camp-tau-mocha.vercel.app/",
   },
@@ -58,7 +58,7 @@ export const PROJECTS = [
     blurb: "Model Context Protocol experiments and agentic, LLM tool-calling pipelines in Python.",
     tags: ["Python", "MCP", "Agentic AI", "LLM"],
     year: "2026",
-    image: "/src/assets/images/projects/mcp-agentic.svg",
+    image: "/mcp-agentic.svg",
     repoUrl: `${GH}/MCP_Master`,
     // Experiments live in the repository; no deployed app.
     liveUrl: null,
@@ -105,19 +105,19 @@ export const CERTIFICATIONS = [
     title: "Generative AI, Deep Learning & Language Models — Virtual Internship",
     issuer: "EduSkills Foundation",
     year: "2026",
-    image: "/src/assets/images/eduskill-ai.png",
+    image: "/eduskill-ai.png",
   },
   {
     title: "Java Full Stack Developer — Virtual Internship",
     issuer: "EduSkills Foundation",
     year: "2026",
-    image: "/src/assets/images/eduskill-java.png",
+    image: "/eduskill-java.png",
   },
   {
     title: "The Web Developer Bootcamp 2026",
     issuer: "Udemy · Colt Steele",
     year: "2026",
-    image: "/src/assets/images/udemy-webdev.jpg",
+    image: "/udemy-webdev.jpg",
   },
 ];
 

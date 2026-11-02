@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" fill="none" role="img" aria-label="MCP Agentic AI project card">
+  <rect width="1280" height="800" fill="#0b0d13"/>
+  <g stroke="rgba(255,90,60,0.35)" stroke-width="1.5">
+    <path d="M640 400 L420 260 M640 400 L420 540 M640 400 L860 260 M640 400 L860 540"/>
+    <path d="M420 260 L300 200 M420 540 L300 600 M860 260 L980 200 M860 540 L980 600"/>
+  </g>
+  <g>
+    <circle cx="640" cy="400" r="26" fill="#ff5a3c"/>
+    <circle cx="420" cy="260" r="16" fill="#1b2233" stroke="#ff5a3c" stroke-width="2"/>
+    <circle cx="420" cy="540" r="16" fill="#1b2233" stroke="#ff5a3c" stroke-width="2"/>
+    <circle cx="860" cy="260" r="16" fill="#1b2233" stroke="#ff5a3c" stroke-width="2"/>
+    <circle cx="860" cy="540" r="16" fill="#1b2233" stroke="#ff5a3c" stroke-width="2"/>
+    <circle cx="300" cy="200" r="10" fill="#ff5a3c" opacity="0.5"/>
+    <circle cx="300" cy="600" r="10" fill="#ff5a3c" opacity="0.5"/>
+    <circle cx="980" cy="200" r="10" fill="#ff5a3c" opacity="0.5"/>
+    <circle cx="980" cy="600" r="10" fill="#ff5a3c" opacity="0.5"/>
+  </g>
+  <text x="96" y="150" fill="#f2efe9" font-family="ui-monospace, monospace" font-size="52" font-weight="700" letter-spacing="6">MCP · AGENTIC AI</text>
+  <text x="96" y="200" fill="#ff5a3c" font-family="ui-monospace, monospace" font-size="26" letter-spacing="3">PYTHON · MODEL CONTEXT PROTOCOL · LLM TOOL-CALLING</text>
+  <text x="96" y="720" fill="#8a8f9c" font-family="ui-monospace, monospace" font-size="22" letter-spacing="2">agentic pipelines · tool orchestration</text>
+</svg>
