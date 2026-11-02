@@ -198,6 +198,52 @@ export function stopAll() {
   master.gain.setValueAtTime(0, t);
 }
 
+/* The break-moment transition: a deep shock boom under a rising launch
+   arpeggio and a bright noise "lift" — the S releasing and the arrows
+   dispersing to begin construction. */
+export function launch() {
+  if (!ready() || !ctx) return;
+  const t = ctx.currentTime;
+  // Deep shock boom
+  const boom = ctx.createOscillator();
+  boom.type = "sine";
+  boom.frequency.setValueAtTime(72, t);
+  boom.frequency.exponentialRampToValueAtTime(26, t + 0.55);
+  const bg = ctx.createGain();
+  bg.gain.setValueAtTime(0.0001, t);
+  bg.gain.exponentialRampToValueAtTime(0.24, t + 0.02);
+  bg.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+  boom.connect(bg).connect(master);
+  boom.start(t); boom.stop(t + 0.65);
+  // Rising launch arpeggio (major-7th shimmer, bright and "amazing")
+  [523.25, 659.25, 783.99, 1046.5, 1318.51].forEach((f, i) => {
+    const so = ctx.createOscillator();
+    so.type = "sine";
+    so.frequency.value = f;
+    const sg = ctx.createGain();
+    const s = t + 0.06 + i * 0.085;
+    sg.gain.setValueAtTime(0.0001, s);
+    sg.gain.exponentialRampToValueAtTime(0.055, s + 0.035);
+    sg.gain.exponentialRampToValueAtTime(0.0001, s + 1.0);
+    so.connect(sg).connect(master);
+    so.start(s); so.stop(s + 1.05);
+  });
+  // Bright noise lift sweeping up into the transition
+  const ns = ctx.createBufferSource();
+  ns.buffer = noise();
+  const bp = ctx.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.Q.value = 1.4;
+  bp.frequency.setValueAtTime(420, t);
+  bp.frequency.exponentialRampToValueAtTime(6500, t + 0.7);
+  const ng = ctx.createGain();
+  ng.gain.setValueAtTime(0.0001, t + 0.02);
+  ng.gain.exponentialRampToValueAtTime(0.06, t + 0.4);
+  ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.85);
+  ns.connect(bp).connect(ng).connect(master);
+  ns.start(t); ns.stop(t + 0.9);
+}
+
 /* ---------- controls ---------- */
 export function duck() {
   if (!master) return;

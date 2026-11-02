@@ -83,8 +83,9 @@ function buildOverlay() {
           <circle class="s-ring r2" r="0" fill="none" stroke="rgba(255,215,94,0.22)" stroke-width="1" stroke-dasharray="2 6" />
           <circle class="s-ring r3" r="0" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1" />
           <g class="s-ticks"></g>
-          <circle class="s-scan" r="0" fill="none" stroke="#ff5a3c" stroke-width="2" stroke-linecap="round" />
         </g>
+        <!-- One-shot shockwave that fires on the break moment, then stays hidden. -->
+        <circle class="s-pulse" r="0" fill="none" stroke="#ff5a3c" stroke-width="2" opacity="0" />
         <path class="s-letter" opacity="0" d="M 92 8 L 20 8 L 8 20 L 8 44 L 20 56 L 76 56 L 92 68 L 92 104 L 20 104 L 8 92"
           transform="translate(-50 -56) scale(1)" fill="none" stroke="#ff5a3c" stroke-width="14"
           stroke-linecap="square" stroke-linejoin="miter" filter="url(#s-glow)" />
@@ -147,10 +148,8 @@ function layoutSMono() {
   g.querySelector(".s-ring.r2").setAttribute("r", (R * 0.75).toFixed(1));
   g.querySelector(".s-ring.r3").setAttribute("r", (R * 0.95).toFixed(1));
 
-  const scan = g.querySelector(".s-scan");
-  scan.setAttribute("r", (R * 0.95).toFixed(1));
-  const circ = 2 * Math.PI * R * 0.95;
-  scan.setAttribute("stroke-dasharray", `${(circ * 0.16).toFixed(1)} ${(circ * 0.84).toFixed(1)}`);
+  // The break-moment shockwave starts at the outer ring and expands outward.
+  g.querySelector(".s-pulse").setAttribute("r", (R * 0.95).toFixed(1));
 
   // technical tick marks on the middle ring
   let ticks = "";
@@ -462,7 +461,6 @@ function buildTimeline() {
   tl.to("#s-mono", { opacity: 1, duration: 0.4, ease: "power1.out" }, 0.05);
   tl.to(".s-letter", { opacity: 1, duration: 0.7, ease: "power2.out" }, 0.15);
   tl.from(".s-rings", { scale: 0.6, opacity: 0, duration: TIMINGS.S, ease: "power2.out" }, 0.1);
-  tl.to(".s-scan", { rotation: 540, duration: openEnd, ease: "none" }, 0);
   tl.call(() => SFX.whoosh(), null, 0.2);
 
   // 2 — three coordinated waves of five: every arrow flies its own curved
@@ -490,9 +488,10 @@ function buildTimeline() {
   tl.to(".s-letter", { stroke: "#ff8568", duration: 0.5, ease: "power1.inOut", yoyo: true, repeat: 1 }, syncAt + 0.1);
   tl.call(() => SFX.thump(), null, holdAt);
 
-  // 4 — break & dispatch: S emits one pulse, the rings expand and fade, and
-  //    every arrow leaves its slot on its own Bézier path toward its first
-  //    real hero-component staging point. The tour takes over from here.
+  // 4 — break & dispatch: a single red shockwave emits from the S, the rings
+  //    and monogram fade out gracefully, and each arrow leaves its slot with
+  //    a tiny stagger — a coordinated launch — on its own Bézier toward the
+  //    first real hero-component staging point. The tour takes over from here.
   const hero = sectionEls[0];
   const staging = hero
     ? [
@@ -501,14 +500,18 @@ function buildTimeline() {
         [vw / 2, hero.docY + hero.h * 0.55],
       ]
     : [[vw / 2, vh / 2]];
+  tl.fromTo(".s-pulse",
+    { attr: { r: mono.R * 0.95, "stroke-width": 2.5 }, opacity: 0.9 },
+    { attr: { r: mono.R * 2.6, "stroke-width": 0.4 }, opacity: 0, duration: 0.9, ease: "power2.out" }, breakAt);
   agents.forEach((a, i) => {
     const [bx, by] = staging[i % 3];
-    curveTo(a, bx + (i - 7) * 30, by + (i % 3) * 22 - 22, breakAt, TIMINGS.dispatch, i % 2 ? -1 : 1, 90, "silk");
+    curveTo(a, bx + (i - 7) * 30, by + (i % 3) * 22 - 22, breakAt + i * 0.045, TIMINGS.dispatch, i % 2 ? -1 : 1, 90, "silk");
   });
-  tl.to("#s-mono", { scale: 1.05, duration: 0.28, ease: "power2.out", yoyo: true, repeat: 1 }, breakAt);
-  tl.to(".s-rings", { scale: 1.55, opacity: 0, duration: 0.8, ease: "power2.out" }, breakAt);
-  tl.to("#s-mono", { opacity: 0, duration: TIMINGS.fade, ease: "power1.in" }, breakAt + TIMINGS.dispatch - TIMINGS.fade);
-  tl.call(() => SFX.sting(), null, breakAt);
+  tl.to("#s-mono", { scale: 1.06, duration: 0.22, ease: "power2.out" }, breakAt);
+  tl.to("#s-mono", { scale: 1.0, duration: 0.3, ease: "power1.in" }, breakAt + 0.22);
+  tl.to(".s-rings", { scale: 1.12, opacity: 0, duration: 0.5, ease: "power1.inOut" }, breakAt + 0.05);
+  tl.to("#s-mono", { opacity: 0, duration: 0.5, ease: "power1.in" }, breakAt + TIMINGS.dispatch - 0.2);
+  tl.call(() => SFX.launch(), null, breakAt);
 
   /* ===== tour over the REAL site ===== */
   let cursor = openEnd;
