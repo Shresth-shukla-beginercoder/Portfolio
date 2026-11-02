@@ -1,0 +1,86 @@
+{
+  "login": "Shresth-shukla-beginercoder",
+  "name": "Shresth shukla",
+  "bio": "4th-Year CSE (AI & ML) Student | Full-Stack Developer | Data Analytics Enthusiast | Building Real-World Projects 🚀",
+  "blog": "",
+  "location": "Gorakhpur ",
+  "company": null,
+  "public_repos": 9,
+  "followers": 0,
+  "avatar": "https://avatars.githubusercontent.com/u/144059698?v=4",
+  "html": "https://github.com/Shresth-shukla-beginercoder",
+  "top_nonfork": [
+    {
+      "name": "sales-analytics-project",
+      "desc": "Sales Data Cleaning, EDA and Interactive Sales Analytics Web Application using Python and Flask.",
+      "lang": "Python",
+      "stars": 1,
+      "pushed": "2026-11-01T13:08:22Z",
+      "homepage": null,
+      "topics": []
+    },
+    {
+      "name": "Yelpcamp_MCP_AI",
+      "desc": null,
+      "lang": "Python",
+      "stars": 1,
+      "pushed": "2026-10-31T08:04:48Z",
+      "homepage": null,
+      "topics": []
+    },
+    {
+      "name": "YelpCamp",
+      "desc": null,
+      "lang": "JavaScript",
+      "stars": 1,
+      "pushed": "2026-10-31T07:50:18Z",
+      "homepage": "https://yelp-camp-two-omega.vercel.app",
+      "topics": []
+    },
+    {
+      "name": "MediTrack",
+      "desc": null,
+      "lang": "JavaScript",
+      "stars": 1,
+      "pushed": "2026-10-31T05:45:18Z",
+      "homepage": "https://medi-track-lake-two.vercel.app",
+      "topics": []
+    },
+    {
+      "name": "DSA",
+      "desc": "QUESTION SOLVING AND HELPING OTHERS :)",
+      "lang": "C++",
+      "stars": 1,
+      "pushed": "2026-10-22T07:59:01Z",
+      "homepage": null,
+      "topics": []
+    },
+    {
+      "name": "full-stack-shresth",
+      "desc": null,
+      "lang": "HTML",
+      "stars": 1,
+      "pushed": "2026-10-21T16:18:22Z",
+      "homepage": null,
+      "topics": []
+    },
+    {
+      "name": "MCP_Master",
+      "desc": null,
+      "lang": "Python",
+      "stars": 1,
+      "pushed": "2026-10-18T08:22:19Z",
+      "homepage": null,
+      "topics": []
+    },
+    {
+      "name": "CRUD_PROJECT",
+      "desc": null,
+      "lang": "JavaScript",
+      "stars": 1,
+      "pushed": "2026-10-04T11:19:46Z",
+      "homepage": "https://crud-project-chi-wine.vercel.app",
+      "topics": []
+    }
+  ]
+}

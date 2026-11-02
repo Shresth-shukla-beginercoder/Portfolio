@@ -1,0 +1,113 @@
+/* === Design tokens === */
+:root {
+  --ink: #05060a;
+  --ink-2: #0b0d13;
+  --panel: #10131b;
+  --line: rgba(255, 90, 60, 0.15);
+  --accent: #ff5a3c;
+  --accent-2: #ffd75e;
+  --text: #f2efe9;
+  --muted: #8a8f9c;
+  --mono: "SFMono-Regular", ui-monospace, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow-x: hidden;
+}
+
+/* === 15-agent construction overlay === */
+/* While the tour runs, every constructible layer is clip-hidden (inset, so
+   zero layout shift) until its agent builds it and marks it .layer-built.
+   The real page stays in flow underneath — nothing is an empty background. */
+html[data-intro="active"] [data-layer]:not(.layer-built) { clip-path: inset(0 100% 0 0); }
+
+#agent-overlay { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
+#agent-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.scan-box { position: fixed; border: 1px solid #4C8DFF; pointer-events: none; }
+.scan-box .h { position: absolute; width: 7px; height: 7px; border: 1.5px solid #4C8DFF; }
+.scan-box .tl { top: -4px; left: -4px; border-right: 0; border-bottom: 0; }
+.scan-box .tr { top: -4px; right: -4px; border-left: 0; border-bottom: 0; }
+.scan-box .bl { bottom: -4px; left: -4px; border-right: 0; border-top: 0; }
+.scan-box .br { bottom: -4px; right: -4px; border-left: 0; border-top: 0; }
+.scan-tag {
+  position: absolute; top: -16px; left: 0;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em;
+  color: #9ec1ff; background: rgba(5, 6, 10, 0.85); padding: 1px 5px; white-space: nowrap;
+}
+.scan-dims {
+  position: absolute; bottom: -15px; right: 0;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em;
+  color: #7dffe6; background: rgba(5, 6, 10, 0.85); padding: 1px 4px;
+}
+.verify-mark {
+  position: fixed; transform: translateX(-100%);
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; font-weight: 700;
+  color: #05060a; background: #34D399; padding: 4px 9px; border-radius: 3px;
+  pointer-events: none; white-space: nowrap;
+}
+#ap-activity {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+  color: #9ec1ff; min-height: 14px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#agent-panel {
+  position: fixed; right: 18px; bottom: 18px; width: 292px;
+  background: rgba(10, 12, 18, 0.86); border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px); border-radius: 10px; padding: 12px 14px;
+  font-family: var(--mono); color: #d7dbe4; pointer-events: auto; z-index: 210;
+}
+.ap-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; letter-spacing: 0.12em; }
+#ap-stage { color: #ff5a3c; }
+#ap-dots { display: flex; flex-wrap: wrap; gap: 5px; margin: 9px 0; }
+.ap-dot { width: 9px; height: 9px; border-radius: 50%; opacity: 0.28; transition: opacity 0.2s, transform 0.2s; }
+.ap-dot.lit { opacity: 1; transform: scale(1.35); }
+#ap-bar { height: 3px; background: rgba(255, 255, 255, 0.1); margin: 9px 0; border-radius: 2px; overflow: hidden; }
+#ap-bar-fill { height: 100%; width: 0; background: #4C8DFF; }
+.ap-actions { gap: 8px; }
+.ap-actions button {
+  flex: 1; font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+  color: #d7dbe4; background: transparent; border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 0; cursor: pointer; border-radius: 4px;
+}
+.ap-actions button:hover, .ap-actions button:focus-visible { border-color: #ff5a3c; color: #ff5a3c; outline: none; }
+@media (max-width: 640px) {
+  #agent-panel { right: 8px; left: 8px; bottom: 8px; width: auto; }
+  .agent .chip { display: none; }
+}
+
+/* === Cinematic layers === */
+#grain-overlay {
+  position: fixed; inset: -50%; z-index: 90; pointer-events: none;
+  opacity: 0.05; background-repeat: repeat;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 0.6s steps(4) infinite;
+}
+@keyframes grain {
+  0% { transform: translate(0,0); }
+  25% { transform: translate(-4%,3%); }
+  50% { transform: translate(3%,-4%); }
+  75% { transform: translate(-3%,-2%); }
+  100% { transform: translate(4%,2%); }
+}
+
+.letterbox {
+  position: fixed; left: 0; right: 0; height: 0; z-index: 95;
+  background: #000; pointer-events: none;
+}
+#letterbox-top { top: 0; }
+#letterbox-bottom { bottom: 0; }
+
+#cursor-dot, #cursor-ring {
+  position: fixed; top: 0; left: 0; pointer-events: none; z-index: 120;
+  border-radius: 50%; transform: translate(-50%, -50%);
+}
+#cursor-dot { width: 6px; height: 6px; background: var(--accent); }
+#cursor-ring { width: 34px; height: 34px; border: 1px solid var(--accent); opacity: 0.5; }
+
+@media (prefers-reduced-motion: reduce) {
+  #grain-overlay { animation: none; }
+}

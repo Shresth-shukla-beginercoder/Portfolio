@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" fill="none" role="img" aria-label="YelpCamp project card">
+  <rect width="1280" height="800" fill="#0b0d13"/>
+  <g stroke="rgba(255,90,60,0.08)" stroke-width="1">
+    <path d="M0 200 H1280 M0 400 H1280 M0 600 H1280"/>
+    <path d="M320 0 V800 M640 0 V800 M960 0 V800"/>
+  </g>
+  <g>
+    <path d="M640 300 C580 300 540 345 540 405 C540 495 640 560 640 560 C640 560 740 495 740 405 C740 345 700 300 640 300 Z" fill="#1b2233" stroke="#ff5a3c" stroke-width="3"/>
+    <path d="M640 380 l22 44 l48 7 l-35 34 l8 48 l-43 -23 l-43 23 l8 -48 l-35 -34 l48 -7 Z" fill="#ff5a3c"/>
+  </g>
+  <text x="96" y="150" fill="#f2efe9" font-family="ui-monospace, monospace" font-size="52" font-weight="700" letter-spacing="6">YELPCAMP</text>
+  <text x="96" y="200" fill="#ff5a3c" font-family="ui-monospace, monospace" font-size="26" letter-spacing="3">JAVASCRIPT · NODE · POSTGRESQL</text>
+  <text x="96" y="720" fill="#8a8f9c" font-family="ui-monospace, monospace" font-size="22" letter-spacing="2">local business discovery &amp; reviews</text>
+</svg>
