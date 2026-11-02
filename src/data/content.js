@@ -30,9 +30,7 @@ export const PROJECTS = [
     year: "2026",
     image: "/src/assets/images/projects/sales-analytics.svg",
     repoUrl: `${GH}/sales-analytics-project`,
-    // Local Python/Flask app — no public deployment yet.
-    // TODO(content): add liveUrl here when Sales Analytics gets deployed.
-    liveUrl: null,
+    liveUrl: "https://sales-analytics-project-2fjs.onrender.com/",
   },
   {
     id: "p-02",

@@ -1,11 +1,15 @@
 import gsap from "gsap";
 import ScrollToPlugin from "gsap/ScrollToPlugin";
+import CustomEase from "gsap/CustomEase";
 import { AGENTS, SECTIONS } from "../data/agents.js";
 import * as SFX from "./sfx.js";
 import { TIMINGS, ORBIT } from "./intro-config.js";
+import { initTrails } from "./trails.js";
 import "./interaction-lock.css";
 
-gsap.registerPlugin(ScrollToPlugin);
+gsap.registerPlugin(ScrollToPlugin, CustomEase);
+// Signature "silky" ease: fast commit out of the gate, long graceful settle.
+try { CustomEase.create("silk", "0.16, 1, 0.3, 1, 0.55, 0.995, 1, 1"); } catch {}
 
 /*
  * 15-agent construction tour over the REAL portfolio.
@@ -117,17 +121,15 @@ function buildOverlay() {
 
 function spawnAgents() {
   const g = $("agent-nodes");
-  agents = AGENTS.map((a) => {
+  agents = AGENTS.map((a, idx) => {
     const node = document.createElementNS("http://www.w3.org/2000/svg", "g");
     node.setAttribute("class", "agent");
     node.setAttribute("data-agent", a.id);
-    node.innerHTML = `
-      <polyline class="trail" points="" fill="none" stroke="${a.color}" stroke-width="1.4"
-        stroke-linecap="round" stroke-linejoin="round" opacity="0.75"
-        ${a.trail === "dotted" ? 'stroke-dasharray="1.5 6"' : a.trail === "dashed" ? 'stroke-dasharray="7 5"' : ""}/>
-      <use href="#arrow-cursor" width="30" height="30" x="-15" y="-15" fill="${a.color}" stroke="#05060a" stroke-width="1.2"/>`;
+    // Trail is no longer an SVG polyline — the pooled canvas in trails.js
+    // renders it (one draw pass, zero DOM churn). Only the arrow body here.
+    node.innerHTML = `<use href="#arrow-cursor" width="30" height="30" x="-15" y="-15" fill="${a.color}" stroke="#05060a" stroke-width="1.2"/>`;
     g.appendChild(node);
-    return { ...a, node, x: -80, y: -80, rot: -30, trail: [] };
+    return { ...a, ti: idx, node, x: -80, y: -80, rot: -30 };
   });
 }
 
@@ -216,14 +218,47 @@ function scrollAt(t) {
 }
 
 /* ---------- motion ---------- */
+// place() only records logical position + rotation for an agent. The DOM
+// (arrow transform + canvas trail) is updated once per frame by the single
+// gsap.ticker below, so 15 agents never churn 15 DOM writes a frame each.
 function place(agent, x, y, rot) {
   agent.x = x;
   agent.y = y;
   agent.rot = rot;
-  agent.trail.push(`${x.toFixed(1)},${y.toFixed(1)}`);
-  if (agent.trail.length > 14) agent.trail.shift();
-  agent.node.querySelector(".trail").setAttribute("points", agent.trail.join(" "));
-  agent.node.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(1)})`);
+  if (trails) trails.record(agent.ti, x, y);
+}
+
+let trails = null;
+let tickerFn = null;
+// Idle settle: a slow per-agent sine drift when an agent is (nearly) still,
+// so the formation breathes instead of freezing. Amplitude scales with how
+// little the agent moved since the last frame — a fast flight gets zero
+// wobble, a landed agent gets the full gentle drift. Driven by the same
+// ticker that renders (never a second loop).
+let prevPos = [];
+function renderAgents() {
+  const now = performance.now();
+  for (let i = 0; i < agents.length; i++) {
+    const a = agents[i];
+    const pv = prevPos[i] || [a.x, a.y];
+    const vx = a.x - pv[0], vy = a.y - pv[1];
+    pv[0] = a.x; pv[1] = a.y;
+    const v = Math.hypot(vx, vy);
+    const still = paused ? 0 : Math.max(0, 1 - v / 5);
+    const wx = a.x + Math.sin(now * 0.0016 + i * 1.7) * 2.4 * still;
+    const wy = a.y + Math.cos(now * 0.0021 + i * 2.3) * 2.4 * still;
+    a.node.setAttribute("transform", `translate(${wx.toFixed(1)} ${wy.toFixed(1)}) rotate(${a.rot.toFixed(1)})`);
+  }
+  if (trails) trails.draw(now);
+}
+function armTicker() {
+  prevPos = agents.map((a) => [a.x, a.y]);
+  if (tickerFn) return;
+  tickerFn = renderAgents;
+  gsap.ticker.add(tickerFn);
+}
+function disarmTicker() {
+  if (tickerFn) { gsap.ticker.remove(tickerFn); tickerFn = null; }
 }
 
 // Fly an agent to a document point, re-aiming every frame against the planned
@@ -252,26 +287,31 @@ function flyTo(agent, docX, docY, at, dur) {
   }, at);
 }
 
-// Quadratic Bézier flight in viewport space (used by the opening sequence,
-// where the page is not yet scrolling). The start point is captured lazily.
-function curveTo(agent, tx, ty, at, dur, bowSign = 1, bow = 90) {
+// Cubic Bézier flight in viewport space (used by the opening sequence and
+// dispatch, where the page is not yet scrolling). The start point is captured
+// lazily so flights chain seamlessly. Two control points bow to opposite
+// sides of the chord for a smooth S-curve — silkier than a single arc.
+function curveTo(agent, tx, ty, at, dur, bowSign = 1, bow = 90, ease = "power3.inOut") {
   const d = dur / agent.speed;
   let sx = null, sy = null;
   const p = { t: 0 };
   tl.to(p, {
     t: 1,
     duration: d,
-    ease: "power2.inOut",
+    ease,
     onUpdate: () => {
       if (sx === null) { sx = agent.x; sy = agent.y; }
       const t = p.t, m = 1 - t;
       const dx = tx - sx, dy = ty - sy, len = Math.hypot(dx, dy) || 1;
-      const mx = (sx + tx) / 2 + (-dy / len) * bow * bowSign;
-      const my = (sy + ty) / 2 + (dx / len) * bow * bowSign;
-      const x = m * m * sx + 2 * m * t * mx + t * t * tx;
-      const y = m * m * sy + 2 * m * t * my + t * t * ty;
-      const vx = 2 * m * (mx - sx) + 2 * t * (tx - mx);
-      const vy = 2 * m * (my - sy) + 2 * t * (ty - my);
+      const px = -dy / len, py = dx / len; // unit perpendicular
+      const c1x = sx + dx * (1 / 3) + px * bow * bowSign;
+      const c1y = sy + dy * (1 / 3) + py * bow * bowSign;
+      const c2x = sx + dx * (2 / 3) - px * bow * bowSign;
+      const c2y = sy + dy * (2 / 3) - py * bow * bowSign;
+      const x = m*m*m*sx + 3*m*m*t*c1x + 3*m*t*t*c2x + t*t*t*tx;
+      const y = m*m*m*sy + 3*m*m*t*c1y + 3*m*t*t*c2y + t*t*t*ty;
+      const vx = 3*m*m*(c1x-sx) + 6*m*t*(c2x-c1x) + 3*t*t*(tx-c2x);
+      const vy = 3*m*m*(c1y-sy) + 6*m*t*(c2y-c1y) + 3*t*t*(ty-c2y);
       place(agent, x, y, (Math.atan2(vy, vx) * 180) / Math.PI + 90);
     },
   }, at);
@@ -285,16 +325,16 @@ function drawBox(target, label, at, life) {
   box.innerHTML = `<span class="scan-tag">${label}</span><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i>
     <span class="scan-dims"></span>`;
   $("scan-layer").appendChild(box);
+  // Static geometry once (elements don't resize during the tour) — only `top`
+  // tracks the planned scroll, computed from cached doc coords (no layout read
+  // per frame, so no reflow storm).
+  box.style.left = target.docX - 6 + "px";
+  box.style.width = target.w + 12 + "px";
+  box.style.height = target.h + 12 + "px";
+  const dims = box.querySelector(".scan-dims");
+  if (dims) dims.textContent = `${Math.round(target.w)}×${Math.round(target.h)}`;
   const apply = () => {
-    const el = target.el;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    box.style.left = r.left - 6 + "px";
-    box.style.top = r.top - 6 + "px";
-    box.style.width = r.width + 12 + "px";
-    box.style.height = r.height + 12 + "px";
-    const dims = box.querySelector(".scan-dims");
-    if (dims) dims.textContent = `${Math.round(r.width)}×${Math.round(r.height)}`;
+    box.style.top = target.docY - scrollAt(tl.time()) - 6 + "px";
   };
   apply();
   const b = gsap.timeline();
@@ -310,12 +350,9 @@ function verify(section, at) {
   mark.className = "verify-mark";
   mark.innerHTML = `✓ ${section.name.toUpperCase()} VERIFIED`;
   el.appendChild(mark);
-  const r = section.el.getBoundingClientRect();
-  const s = scrollAt(at);
+  mark.style.left = section.docX + section.w - 6 + "px";
   const placeAt = () => {
-    const rr = section.el.getBoundingClientRect();
-    mark.style.left = rr.right - 6 + "px";
-    mark.style.top = rr.top + 46 + "px";
+    mark.style.top = section.docY - scrollAt(tl.time()) + 46 + "px";
   };
   placeAt();
   const m = gsap.timeline();
@@ -368,23 +405,35 @@ function setActivity(agent, layer) {
   el.textContent = `${ACTION[layer.kind] || "BUILDING"} ${layer.id}`;
 }
 
-/* ---------- panel ---------- */
+/* ---------- panel ----------
+   Called every frame by the master timeline's onUpdate. To avoid DOM thrash
+   (and the per-frame layout reflow that `style.width` caused), we cache each
+   value and only write the node when it actually changes, and drive the
+   progress bar with a compositor-only transform instead of width. */
+const panelCache = {};
 function setPanel() {
   if (!tl) return;
   const t = tl.time();
   const done = doneTimes.filter((d) => d <= t + 0.001).length;
-  $("ap-layers").textContent = `${done} / ${layers.length}`;
-  $("ap-bar-fill").style.width = (tl.progress() * 100).toFixed(2) + "%";
+  const layersTxt = `${done} / ${layers.length}`;
+  if (panelCache.layers !== layersTxt) { panelCache.layers = layersTxt; $("ap-layers").textContent = layersTxt; }
+
+  const prog = tl.progress();
+  const scaleX = (prog * 100).toFixed(1);
+  if (panelCache.scaleX !== scaleX) { panelCache.scaleX = scaleX; $("ap-bar-fill").style.transform = `scaleX(${prog})`; }
 
   let secIdx = 0;
   SECTIONS.forEach((s, i) => { if (tl.labels[s.id] !== undefined && t >= tl.labels[s.id] - 0.01) secIdx = i; });
-  $("ap-section").textContent = `${String(secIdx + 1).padStart(2, "0")} / ${String(SECTIONS.length).padStart(2, "0")}  ${SECTIONS[secIdx].name}`;
+  const sectionTxt = `${String(secIdx + 1).padStart(2, "0")} / ${String(SECTIONS.length).padStart(2, "0")}  ${SECTIONS[secIdx].name}`;
+  if (panelCache.section !== sectionTxt) { panelCache.section = sectionTxt; $("ap-section").textContent = sectionTxt; }
 
   const stage = t < tl.labels.hero ? "INTRODUCING"
     : t >= (tl.labels.finale ?? tl.duration()) ? "INSPECTING"
     : "CONSTRUCTING";
-  $("ap-stage").textContent = stage;
-  $("ap-status").textContent = paused ? "PAUSED — YOU'RE IN CONTROL" : finished ? "COMPLETE" : "TOURING";
+  if (panelCache.stage !== stage) { panelCache.stage = stage; $("ap-stage").textContent = stage; }
+
+  const status = paused ? "PAUSED — YOU'RE IN CONTROL" : finished ? "COMPLETE" : "TOURING";
+  if (panelCache.status !== status) { panelCache.status = status; $("ap-status").textContent = status; }
 }
 
 function lightDot(id, on) {
@@ -395,6 +444,7 @@ function lightDot(id, on) {
 function buildTimeline() {
   tl = gsap.timeline({ paused: true, onUpdate: setPanel });
   plan = [];
+  for (const k in panelCache) delete panelCache[k]; // rebuild -> recompute panel
 
   /* ===== OPENING: central S monogram + 15-agent circular formation =====
      All timings live in src/intro/intro-config.js (TIMINGS). The sequence ends
@@ -422,7 +472,7 @@ function buildTimeline() {
     const startR = mono.R * 1.25 + Math.max(vw, vh) * 0.35;
     place(a, mono.cx + Math.cos(a0) * startR, mono.cy + Math.sin(a0) * startR, (a0 * 180) / Math.PI + 90);
     const s = orbitSlot(i, 0);
-    curveTo(a, s.x, s.y, tW[Math.floor(i / 5)], TIMINGS.wave, i % 2 ? 1 : -1, 100);
+    curveTo(a, s.x, s.y, tW[Math.floor(i / 5)], TIMINGS.wave, i % 2 ? 1 : -1, 70, "silk");
     tl.call(() => SFX.blip(), null, tW[Math.floor(i / 5)] + TIMINGS.wave - 0.05);
   });
 
@@ -453,7 +503,7 @@ function buildTimeline() {
     : [[vw / 2, vh / 2]];
   agents.forEach((a, i) => {
     const [bx, by] = staging[i % 3];
-    curveTo(a, bx + (i - 7) * 30, by + (i % 3) * 22 - 22, breakAt, TIMINGS.dispatch, i % 2 ? -1 : 1, 120);
+    curveTo(a, bx + (i - 7) * 30, by + (i % 3) * 22 - 22, breakAt, TIMINGS.dispatch, i % 2 ? -1 : 1, 90, "silk");
   });
   tl.to("#s-mono", { scale: 1.05, duration: 0.28, ease: "power2.out", yoyo: true, repeat: 1 }, breakAt);
   tl.to(".s-rings", { scale: 1.55, opacity: 0, duration: 0.8, ease: "power2.out" }, breakAt);
@@ -614,6 +664,9 @@ function teardown(animated) {
   listeners.forEach((off) => off());
   listeners.length = 0;
   const overlay = $("agent-overlay");
+  // Single ticker + pooled trail canvas are torn down with the overlay.
+  disarmTicker();
+  if (trails) { trails.destroy(); trails = null; }
   // Release the site: un-hide layers, clear the planned scroll, re-arm Lenis.
   document.documentElement.removeAttribute("data-intro");
   document.documentElement.classList.remove("intro-interaction-lock");
@@ -709,8 +762,12 @@ export async function startIntro() {
   if (started) return;
   started = true;
   SFX.init();
-  buildOverlay();
+  const overlayRoot = buildOverlay();
   spawnAgents();
+  // Pooled canvas trail layer + one shared ticker: 15 agents render their
+  // trails in a single pass per frame, arrows updated once per frame.
+  trails = initTrails(agents, overlayRoot);
+  armTicker();
   // Conceal the site's layers immediately so the real page (never an empty
   // background) is what the agents build on, with zero layout shift.
   document.documentElement.setAttribute("data-intro", "active");
