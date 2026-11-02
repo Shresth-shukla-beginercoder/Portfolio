@@ -1,4 +1,8 @@
 import { PROFILE } from "../data/content.js";
+import { lazy, Suspense } from "react";
+
+// Lazy load the portrait particle system (only WebGL component in the entire 3D system)
+const PortraitParticles = lazy(() => import("../3d/components/PortraitParticles.jsx"));
 
 export default function Hero() {
   return (
@@ -59,25 +63,17 @@ export default function Hero() {
 
           {/* Portrait with overlaid name */}
           <div className="relative w-full max-w-md md:max-w-lg mx-auto">
-            {/* Portrait image - centered, visible, monochrome */}
+            {/* Portrait image - centered, visible, monochrome - NOW WITH 3D PARTICLES */}
             <div
               data-layer="hero.portrait"
               data-owner="7"
               data-kind="image"
               className="relative w-full aspect-[4/5] overflow-hidden"
             >
-              <img
-                data-hero-photo
-                src={PROFILE.photo}
-                alt="Shresth Shukla"
-                className="w-full h-full object-cover object-[center_20%]"
-                style={{
-                  filter: "grayscale(100%) contrast(1.15) brightness(1.0)"
-                }}
-              />
-              {/* Subtle vignette */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#05060a] via-transparent to-transparent opacity-60" />
-              <div className="absolute inset-0 bg-gradient-to-b from-[#05060a]/20 via-transparent to-transparent" />
+              <PortraitParticles imageSrc={PROFILE.photo} layer="hero.portrait" />
+              {/* Subtle vignette overlay (preserved) */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#05060a] via-transparent to-transparent opacity-60 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#05060a]/20 via-transparent to-transparent pointer-events-none" />
             </div>
 
             {/* Oversized name - positioned over lower portion of portrait */}

@@ -1,3 +1,4 @@
+import { ConstructionProvider } from "./3d/ConstructionContext.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Hero from "./components/Hero.jsx";
 import About from "./components/About.jsx";
@@ -11,20 +12,22 @@ import Footer from "./components/Footer.jsx";
 
 function App() {
   return (
-    <div className="bg-[#05060a] text-[#f2efe9] min-h-screen">
-      <Navbar />
-      <main>
-        <Hero />
-        <About />
-        <Skills />
-        <Projects />
-        <Experience />
-        <Certifications />
-        <Achievements />
-        <Contact />
-      </main>
-      <Footer />
-    </div>
+    <ConstructionProvider>
+      <div className="bg-[#05060a] text-[#f2efe9] min-h-screen">
+        <Navbar />
+        <main>
+          <Hero />
+          <About />
+          <Skills />
+          <Projects />
+          <Experience />
+          <Certifications />
+          <Achievements />
+          <Contact />
+        </main>
+        <Footer />
+      </div>
+    </ConstructionProvider>
   );
 }
 

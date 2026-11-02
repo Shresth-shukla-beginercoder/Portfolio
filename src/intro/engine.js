@@ -383,6 +383,14 @@ function verify(section, at) {
 // animates the clip back and marks it built so it stays visible.
 function reveal(layer, at, dur) {
   const el = layer.el;
+
+  // NEW: Trigger 3D state transition at start of reveal
+  tl.call(() => {
+    if (window.__set3DLayerState) {
+      window.__set3DLayerState(layer.id, "revealing");
+    }
+  }, null, at);
+
   if (layer.kind === "image") {
     // diagonal wipe for the portrait
     tl.fromTo(el,
@@ -395,10 +403,17 @@ function reveal(layer, at, dur) {
       { clipPath: "inset(0 0% 0 0)", duration: dur, ease: "power2.inOut" },
       at);
   }
+
   tl.call(() => {
     el.classList.add("layer-built");
     gsap.set(el, { clearProps: "clip-path" });
+
+    // NEW: Mark 3D state as fully active after construction
+    if (window.__set3DLayerState) {
+      window.__set3DLayerState(layer.id, "active");
+    }
   }, null, at + dur);
+
   doneTimes.push(at + dur);
   layerTimes[layer.id] = at;
 }

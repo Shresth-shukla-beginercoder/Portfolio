@@ -1,5 +1,6 @@
 import { ACHIEVEMENTS } from "../data/content.js";
 import { Trophy } from "lucide-react";
+import Achievement3D from "../3d/components/Achievement3D.jsx";
 
 export default function Achievements() {
   return (
@@ -10,10 +11,12 @@ export default function Achievements() {
       </div>
       <div data-section-body className="space-y-4">
         {ACHIEVEMENTS.map((a, i) => (
-          <div key={i} data-layer={`achievements.item.${i}`} data-owner="13" data-kind="polish" className="flex items-center gap-4 border-b border-white/10 pb-4">
-            <Trophy size={18} className="text-[#ff5a3c]" />
-            <span className="text-gray-300">{a}</span>
-          </div>
+          <Achievement3D key={i} achievement={a} index={i} layer={`achievements.item.${i}`}>
+            <div data-layer={`achievements.item.${i}`} data-owner="13" data-kind="polish" className="flex items-center gap-4 border-b border-white/10 pb-4">
+              <Trophy size={18} className="text-[#ff5a3c]" />
+              <span className="text-gray-300">{a}</span>
+            </div>
+          </Achievement3D>
         ))}
       </div>
     </section>
