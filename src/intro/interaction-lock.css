@@ -1,11 +1,22 @@
-
-# Interaction Blocker
-.intro-interaction-lock {
+/*
+ * Interaction lock while the 15-agent tour runs.
+ *
+ * `pointer-events: none` on every site element blocks clicks on links,
+ * buttons, and normal controls. The construction overlay itself is carved
+ * back out so the Pause / Resume, Skip, and Sound buttons stay the only
+ * interactive surface. All of this is removed on finish or skip so the
+ * post-intro site is fully interactive again.
+ */
+html.intro-interaction-lock,
+html.intro-interaction-lock body,
+html.intro-interaction-lock * {
   pointer-events: none !important;
   touch-action: none !important;
 }
 
-/* Allow clicks only on panel buttons */
-#agent-overlay .ap-button {
+/* The overlay + its panel controls are the ONLY live UI during the tour. */
+html.intro-interaction-lock #agent-overlay,
+html.intro-interaction-lock #agent-overlay * {
   pointer-events: auto !important;
+  touch-action: auto !important;
 }

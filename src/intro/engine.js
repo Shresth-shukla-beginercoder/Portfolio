@@ -3,6 +3,7 @@ import ScrollToPlugin from "gsap/ScrollToPlugin";
 import { AGENTS, SECTIONS } from "../data/agents.js";
 import * as SFX from "./sfx.js";
 import { TIMINGS, ORBIT } from "./intro-config.js";
+import "./interaction-lock.css";
 
 gsap.registerPlugin(ScrollToPlugin);
 
@@ -603,6 +604,7 @@ function ringExit(at) {
 function finish() {
   if (finished) return;
   finished = true;
+  SFX.stopAll();
   setPanel();
   teardown(true);
   if (typeof window.__onIntroDone === "function") window.__onIntroDone();
@@ -631,8 +633,8 @@ function interrupt() {
   if (!tl || finished || paused) return;
   paused = true;
   tl.pause();
-  // Hand scrolling back to the visitor: re-arm Lenis so they can roam.
-  window.__lenis?.start?.();
+  // No Lenis hand-back while paused: the tour keeps single ownership of
+  // scrolling, and the interaction lock stays in place until resume.
   setPanel();
 }
 
@@ -646,7 +648,7 @@ function resume() {
 
 function skip() {
   if (!tl || finished) return;
-  SFX.duck();
+  SFX.stopAll();
   tl.progress(1);
   finish();
 }
@@ -656,11 +658,19 @@ function bindControls() {
   on($("ap-pause"), "click", () => (paused ? resume() : interrupt()));
   on($("ap-skip"), "click", skip);
   on($("ap-mute"), "click", () => { SFX.toggle(); $("ap-mute").textContent = SFX.enabled() ? "SOUND ON" : "SOUND OFF"; });
-  on(window, "wheel", interrupt, { passive: true });
-  on(window, "touchstart", interrupt, { passive: true });
+  // Interaction lock: wheel / touch / scrollbar keys are swallowed for the
+  // whole tour (the auto-scroll driver owns movement). Panel buttons stay
+  // the only interactive surface. Everything is released on finish/skip.
+  on(window, "wheel", (e) => e.preventDefault(), { passive: false });
+  on(window, "touchmove", (e) => e.preventDefault(), { passive: false });
   on(window, "keydown", (e) => {
-    if (e.key === "Escape") skip();
-    else if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", " ", "Home", "End"].includes(e.key)) interrupt();
+    // Escape is still a valid "skip" during the tour.
+    if (e.key === "Escape") { skip(); return; }
+    // Scroll keys are locked out (no default scroll) while the tour runs;
+    // they do NOT pause — Pause/Resume/Skip/Sound are the only controls.
+    if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", " ", "Home", "End"].includes(e.key)) {
+      e.preventDefault();
+    }
   });
 }
 

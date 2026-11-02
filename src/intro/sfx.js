@@ -18,6 +18,7 @@ let ctx = null;
 let master = null;
 let ambientOn = false;
 let noiseBuf = null;
+let ambientNodes = [];
 
 function ready() {
   if (!ctx || hardDisabled || muted) return false;
@@ -52,6 +53,7 @@ function startAmbient() {
   bed.gain.setValueAtTime(0.0001, t);
   bed.gain.linearRampToValueAtTime(0.085, t + 5);
   bed.connect(master);
+  ambientNodes = [bed];
 
   // Detuned sub-bass drone (two sines + one low saw)
   [[55, 0.5], [55.8, 0.42], [110.4, 0.06]].forEach(([f, g]) => {
@@ -65,6 +67,7 @@ function startAmbient() {
     og.gain.value = g;
     o.connect(lp).connect(og).connect(bed);
     o.start(t);
+    ambientNodes.push(o);
   });
 
   // Starfield: gentle filtered noise, shimmer LFO
@@ -85,6 +88,7 @@ function startAmbient() {
   src.connect(bp).connect(ng).connect(bed);
   src.start(t);
   lfo.start(t);
+  ambientNodes.push(src, lfo);
 }
 
 function unlock() {
@@ -183,8 +187,15 @@ export function sting() {
 
 export function stopAll() {
   if (!ctx) return;
-  master.gain.setValueAtTime(0, ctx.currentTime);
+  // Hard-tear down the ambient bed: stop every oscillator/source, disconnect
+  // it, and silence the master so nothing can outlive the intro (finish or
+  // skip). The post-intro site boots its own ambient via main.jsx, not this.
+  ambientNodes.forEach((n) => { try { n.stop && n.stop(); } catch {} try { n.disconnect && n.disconnect(); } catch {} });
+  ambientNodes = [];
   ambientOn = false;
+  const t = ctx.currentTime;
+  master.gain.cancelScheduledValues(t);
+  master.gain.setValueAtTime(0, t);
 }
 
 /* ---------- controls ---------- */
