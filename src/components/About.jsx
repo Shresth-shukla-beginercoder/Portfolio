@@ -1,4 +1,5 @@
 import { ABOUT } from "../data/about.js";
+import Card3D from "../3d/components/Card3D.jsx";
 
 const OWNERS = { 1: 4, 2: 5, 3: 4, 4: 5, 5: 6, 6: 4 };
 
@@ -20,10 +21,12 @@ export default function About() {
           const num = parseInt(key.replace("s", ""), 10);
           const layer = `about.s${num}`;
           return (
-            <div key={key} data-layer={layer} data-owner={OWNERS[num]} data-kind="type" className="border border-white/10 bg-[#10131b] p-6">
-              <h3 className="text-lg font-bold text-[#ff5a3c] mb-3">{block.title}</h3>
-              <p className="text-gray-300 text-sm leading-relaxed">{block.body}</p>
-            </div>
+            <Card3D key={key} layer={layer} depth={20} glow={true} float={true}>
+              <div data-layer={layer} data-owner={OWNERS[num]} data-kind="type" className="border border-white/10 bg-[#10131b] p-6">
+                <h3 className="text-lg font-bold text-[#ff5a3c] mb-3">{block.title}</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">{block.body}</p>
+              </div>
+            </Card3D>
           );
         })}
       </div>

@@ -49,26 +49,37 @@ export default function Navbar() {
       data-layer="nav.root"
       data-owner="10"
       data-kind="nav"
-      className={`fixed top-0 left-0 right-0 z-50 px-8 md:px-20 transition-colors duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 px-6 md:px-20 py-5 transition-all duration-300 ${
         scrolled
-          ? "nav-glass py-3 border-b border-[#ff5a3c]/25"
-          : "py-5 border-b border-transparent"
+          ? "nav-glass border-b border-[#ff5a3c]/20"
+          : "border-b border-[#ff5a3c]/10"
       }`}
+      style={{
+        backdropFilter: scrolled ? "blur(12px)" : "blur(8px)",
+        WebkitBackdropFilter: scrolled ? "blur(12px)" : "blur(8px)",
+        background: scrolled
+          ? "rgba(11, 13, 19, 0.75)"
+          : "rgba(5, 6, 10, 0.5)"
+      }}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+        {/* Logo - elegant serif */}
         <a
           href="#hero"
           data-layer="nav.logo"
           data-owner="10"
           data-kind="nav"
-          className="logo text-lg font-bold tracking-[0.3em] text-white nav-enter"
-          style={{ animationDelay: "0.05s" }}
+          className="nav-enter text-lg font-serif font-bold tracking-wider text-white"
+          style={{
+            animationDelay: "0.05s",
+            fontFamily: "Georgia, 'Times New Roman', serif"
+          }}
         >
-          SS<span className="text-[#ff5a3c]">.</span>
+          Shresth Shukla
         </a>
 
         {/* Desktop links */}
-        <ul className="hidden md:flex gap-8 text-xs tracking-widest uppercase">
+        <ul className="hidden md:flex gap-10 text-xs tracking-widest uppercase">
           {NAV.map((n, i) => (
             <li
               key={n.id}
@@ -91,6 +102,18 @@ export default function Navbar() {
           ))}
         </ul>
 
+        {/* Let's Talk button (desktop) */}
+        <a
+          href="#contact"
+          data-layer="nav.lets-talk"
+          data-owner="10"
+          data-kind="button"
+          className="hidden md:block px-6 py-2 text-xs font-mono tracking-widest uppercase text-white border border-[#ff5a3c]/60 rounded transition-all duration-300 hover:bg-[#ff5a3c]/10 hover:border-[#ff5a3c] hover:shadow-lg hover:shadow-[#ff5a3c]/20"
+          data-hoverable
+        >
+          Let's Talk ↗
+        </a>
+
         {/* Mobile toggle */}
         <button
           type="button"
@@ -109,7 +132,7 @@ export default function Navbar() {
       {/* Mobile sheet */}
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ease-out ${
-          open ? "max-h-80 opacity-100 mt-3" : "max-h-0 opacity-0"
+          open ? "max-h-96 opacity-100 mt-3" : "max-h-0 opacity-0"
         }`}
       >
         <ul className="flex flex-col gap-4 pb-4 text-xs tracking-widest uppercase border-t border-white/10 pt-4">
@@ -127,6 +150,16 @@ export default function Navbar() {
               </a>
             </li>
           ))}
+          <li className="mt-4 pt-4 border-t border-white/10">
+            <a
+              href="#contact"
+              onClick={() => setOpen(false)}
+              data-hoverable
+              className="block px-4 py-2 text-xs font-mono tracking-widest uppercase text-white border border-[#ff5a3c]/60 rounded text-center transition-all duration-300 hover:bg-[#ff5a3c]/10 hover:border-[#ff5a3c]"
+            >
+              Let's Connect ↗
+            </a>
+          </li>
         </ul>
       </div>
     </nav>

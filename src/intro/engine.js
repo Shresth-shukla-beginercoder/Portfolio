@@ -383,6 +383,14 @@ function verify(section, at) {
 // animates the clip back and marks it built so it stays visible.
 function reveal(layer, at, dur) {
   const el = layer.el;
+
+  // NEW: Trigger 3D state transition at start of reveal
+  tl.call(() => {
+    if (window.__set3DLayerState) {
+      window.__set3DLayerState(layer.id, "revealing");
+    }
+  }, null, at);
+
   if (layer.kind === "image") {
     // diagonal wipe for the portrait
     tl.fromTo(el,
@@ -395,10 +403,17 @@ function reveal(layer, at, dur) {
       { clipPath: "inset(0 0% 0 0)", duration: dur, ease: "power2.inOut" },
       at);
   }
+
   tl.call(() => {
     el.classList.add("layer-built");
     gsap.set(el, { clearProps: "clip-path" });
+
+    // NEW: Mark 3D state as fully active after construction
+    if (window.__set3DLayerState) {
+      window.__set3DLayerState(layer.id, "active");
+    }
   }, null, at + dur);
+
   doneTimes.push(at + dur);
   layerTimes[layer.id] = at;
 }
@@ -661,7 +676,17 @@ function buildTimeline() {
   tl.addLabel("finale", finaleAt);
   tl.call(() => SFX.sting(), null, finaleAt);
   finaleGather(finaleAt + 0.15);
-  tl.call(finish, null, finaleAt + FINALE + 0.4);
+
+  // NEW: Automatic smooth scroll to top after the finale (once all arrows and
+  // overlays have dispersed). This runs after spreadAt + exits are scheduled.
+  const spreadAt = finaleAt + 0.15 + 0.9 + 1.1; // hold S formation for 1.1s
+  tl.to(window, {
+    scrollTo: { y: 0, autoKill: false },
+    duration: 1.2,
+    ease: "power3.inOut"
+  }, spreadAt + 0.8); // Start scroll after arrows have begun to exit
+
+  tl.call(finish, null, finaleAt + FINALE + 1.6); // Add delay for the scroll
 
   doneTimes.sort((a, b) => a - b);
 }

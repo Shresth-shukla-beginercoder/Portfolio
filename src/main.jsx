@@ -6,13 +6,30 @@ import { initHero, initSections, initHeroAmbient } from "./scenes/sections.js";
 import { initCursor } from "./fx/cursor.js";
 import Lenis from "lenis";
 import App from "./App.jsx";
+import { useSetConstructionState } from "./3d/ConstructionContext.jsx";
 import "./index.css";
 import "./styles.css";
+
+// Wrapper to expose the construction context to the intro engine
+function AppWithBridge() {
+  const setLayerState = useSetConstructionState();
+
+  React.useEffect(() => {
+    // Expose the 3D state setter globally so the construction engine can call it
+    window.__set3DLayerState = setLayerState;
+
+    return () => {
+      window.__set3DLayerState = null;
+    };
+  }, [setLayerState]);
+
+  return <App />;
+}
 
 const root = document.getElementById("root");
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <App />
+    <AppWithBridge />
   </React.StrictMode>
 );
 
@@ -34,10 +51,22 @@ if (!reducedMotion) {
 
 let booted = false;
 // Skip path (reduced motion / ?intro=0): nothing was constructed, so run the
-// full scroll-reveal scenes.
+// full scroll-reveal scenes. Also activate all 3D layers immediately.
 function bootAfterIntro() {
   if (booted) return;
   booted = true;
+
+  // On skip path: set all 3D layers to "active" immediately (no construction animation)
+  setTimeout(() => {
+    const layers = document.querySelectorAll("[data-layer]");
+    layers.forEach((el) => {
+      const layerId = el.dataset.layer;
+      if (window.__set3DLayerState) {
+        window.__set3DLayerState(layerId, "active");
+      }
+    });
+  }, 100); // Small delay to ensure React has rendered
+
   initHero();
   initSections();
   initCursor();
