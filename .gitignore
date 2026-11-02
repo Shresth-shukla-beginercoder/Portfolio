@@ -1,0 +1,26 @@
+# Build directories
+node_modules/
+dist/
+build/
+
+# Environment files
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Playwright/Shots (optional, but probably shouldn't be in main repo)
+scripts/shots/
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# OS specific
+.DS_Store
