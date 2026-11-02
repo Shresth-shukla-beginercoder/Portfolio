@@ -37,8 +37,13 @@ const REVEAL = 0.8;       // element gets built
 const SCROLL_DUR = 1.0;
 const VERIFY = 0.7;       // Sentinel check per section
 const GAP = 0.35;
-const FINALE = 3.2;
+const FINALE = 3.8;
 const HEADER = 70;
+
+// Idle-management geometry for the agent flights:
+const ENTER = 0.65;      // curved re-entry to a task position
+const EXIT_DUR = 0.55;   // curved exit to the nearest screen edge
+const IDLE_GAP = 1.5;    // task gap above which an agent parks off-screen
 
 const STEP = SCAN * 0.6;  // layer cadence
 
@@ -49,6 +54,8 @@ let sectionEls = [];
 let plan = [];            // {t, dur, from, to} — planned window scrollY
 let doneTimes = [];
 let layerTimes = {};      // layer id -> reveal start time (for verification)
+let agentEvents = [];    // per-agent task list, filled by the tour pass
+const childTLs = [];      // child timelines (scan boxes, verify marks) — killed in teardown
 let paused = false;
 let finished = false;
 let started = false;
@@ -260,28 +267,31 @@ function disarmTicker() {
   if (tickerFn) { gsap.ticker.remove(tickerFn); tickerFn = null; }
 }
 
-// Fly an agent to a document point, re-aiming every frame against the planned
-// scroll so it lands on the element regardless of seeking or scroll progress.
-// The start position is captured lazily so flights chain seamlessly from
-// wherever the agent actually is at launch time.
-function flyTo(agent, docX, docY, at, dur) {
+// Cubic Bézier flight to a DOCUMENT point, re-aiming every frame against the
+// planned scroll so the agent lands on the element regardless of seeking or
+// scroll progress. The start position is captured lazily so flights chain
+// seamlessly from wherever the agent actually is at launch time.
+function flightTo(agent, docX, docY, at, dur, bowSign = 1, bow = 60, ease = "silk") {
   const d = dur / agent.speed;
   let sx = null, sy = null;
-  const proxy = { t: 0 };
-  tl.to(proxy, {
+  const p = { t: 0 };
+  tl.to(p, {
     t: 1,
     duration: d,
-    ease: "power3.inOut",
+    ease,
     onUpdate: () => {
       if (sx === null) { sx = agent.x; sy = agent.y; }
-      const k = proxy.t;
-      const sNow = scrollAt(at + k * d);
-      const tvy = docY - sNow;
-      const bow = Math.sin(k * Math.PI) * 26 * (agent.num % 2 ? 1 : -1);
-      const vx = sx + (docX - sx) * k + bow;
-      const vy = sy + (tvy - sy) * k;
-      const ang = (Math.atan2(tvy - sy, docX - sx) * 180) / Math.PI + 90;
-      place(agent, vx, vy, ang);
+      const t = p.t, m = 1 - t;
+      const ty = docY - scrollAt(at + t * d); // re-aimed viewport target
+      const dx = docX - sx, dy = ty - sy, len = Math.hypot(dx, dy) || 1;
+      const px = -dy / len, py = dx / len;    // unit perpendicular
+      const c1x = sx + dx / 3 + px * bow * bowSign, c1y = sy + dy / 3 + py * bow * bowSign;
+      const c2x = sx + dx * (2 / 3) - px * bow * bowSign, c2y = sy + dy * (2 / 3) - py * bow * bowSign;
+      const x = m*m*m*sx + 3*m*m*t*c1x + 3*m*t*t*c2x + t*t*t*docX;
+      const y = m*m*m*sy + 3*m*m*t*c1y + 3*m*t*t*c2y + t*t*t*ty;
+      const vx = 3*m*m*(c1x-sx) + 6*m*t*(c2x-c1x) + 3*t*t*(docX-c2x);
+      const vy = 3*m*m*(c1y-sy) + 6*m*t*(c2y-c1y) + 3*t*t*(ty-c2y);
+      place(agent, x, y, (Math.atan2(vy, vx) * 180) / Math.PI + 90);
     },
   }, at);
 }
@@ -341,6 +351,7 @@ function drawBox(target, label, at, life) {
   b.to(box, { opacity: 0, duration: 0.35, onComplete: () => box.remove() });
   b.to({}, { duration: life, onUpdate: apply });
   tl.add(b, at);
+  childTLs.push(b);
 }
 
 function verify(section, at) {
@@ -359,6 +370,7 @@ function verify(section, at) {
   m.to(mark, { opacity: 0, duration: 0.3, onComplete: () => mark.remove() });
   m.to({}, { duration: VERIFY, onUpdate: placeAt });
   tl.add(m, at);
+  childTLs.push(m);
 }
 
 /* ---------- reveals ---------- */
@@ -488,25 +500,15 @@ function buildTimeline() {
   tl.to(".s-letter", { stroke: "#ff8568", duration: 0.5, ease: "power1.inOut", yoyo: true, repeat: 1 }, syncAt + 0.1);
   tl.call(() => SFX.thump(), null, holdAt);
 
-  // 4 — break & dispatch: a single red shockwave emits from the S, the rings
-  //    and monogram fade out gracefully, and each arrow leaves its slot with
-  //    a tiny stagger — a coordinated launch — on its own Bézier toward the
-  //    first real hero-component staging point. The tour takes over from here.
-  const hero = sectionEls[0];
-  const staging = hero
-    ? [
-        [hero.docX + 80, hero.docY + 60],
-        [hero.docX + Math.max(hero.w - 160, 160), hero.docY + hero.h * 0.4],
-        [vw / 2, hero.docY + hero.h * 0.55],
-      ]
-    : [[vw / 2, vh / 2]];
+  // 4 — break: a single red shockwave emits from the S, the monogram and
+  //    rings fade out gracefully. Every arrow leaves its orbit slot on its
+  //    own silk Bézier toward where it is actually needed — no arrow stays
+  //    frozen in the circle. The per-agent dispatch + idle enter/exit
+  //    flights are scheduled centrally below (scheduleAgentFlights), after
+  //    the tour has recorded each agent's real tasks.
   tl.fromTo(".s-pulse",
     { attr: { r: mono.R * 0.95, "stroke-width": 2.5 }, opacity: 0.9 },
     { attr: { r: mono.R * 2.6, "stroke-width": 0.4 }, opacity: 0, duration: 0.9, ease: "power2.out" }, breakAt);
-  agents.forEach((a, i) => {
-    const [bx, by] = staging[i % 3];
-    curveTo(a, bx + (i - 7) * 30, by + (i % 3) * 22 - 22, breakAt + i * 0.045, TIMINGS.dispatch, i % 2 ? -1 : 1, 90, "silk");
-  });
   tl.to("#s-mono", { scale: 1.06, duration: 0.22, ease: "power2.out" }, breakAt);
   tl.to("#s-mono", { scale: 1.0, duration: 0.3, ease: "power1.in" }, breakAt + 0.22);
   tl.to(".s-rings", { scale: 1.12, opacity: 0, duration: 0.5, ease: "power1.inOut" }, breakAt + 0.05);
@@ -514,6 +516,16 @@ function buildTimeline() {
   tl.call(() => SFX.launch(), null, breakAt);
 
   /* ===== tour over the REAL site ===== */
+  // Agent tasks are recorded as data while the construction is scheduled;
+  // the flights themselves are scheduled centrally afterwards, so every
+  // agent moves on clean curves: orbit → its own first task, off-screen
+  // while idle, curved re-entry for the next task. Nothing lingers,
+  // nothing teleports, nothing overlaps in time.
+  agentEvents = agents.map(() => []);
+  const task = (ai, x, y, t, work) => {
+    if (ai >= 0 && ai < agents.length) agentEvents[ai].push({ x, y, t, work });
+  };
+
   let cursor = openEnd;
   let lastY = 0;
   sectionEls.forEach((sec, sIdx) => {
@@ -534,7 +546,7 @@ function buildTimeline() {
     ];
     [0, 1, 2].forEach((n, k) => {
       const a = agents[n];
-      flyTo(a, sweepPts[k][0], sweepPts[k][1], cursor + 0.2 + k * 0.28, 0.9);
+      task(n, sweepPts[k][0], sweepPts[k][1], cursor + 0.2 + k * 0.28, 1.0);
       tl.call(() => lightDot(a.id, true), null, cursor + 0.2 + k * 0.28);
       tl.call(() => lightDot(a.id, false), null, cursor + 0.2 + k * 0.28 + 1.0);
     });
@@ -567,8 +579,8 @@ function buildTimeline() {
       const at = cursor;
 
       tl.call(() => { lightDot(agent.id, true); setActivity(agent, layer); }, null, at);
-      flyTo(agent, layer.docX + layer.w / 2, layer.docY + layer.h / 2, at, 0.8);
-      flyTo(partner, layer.docX + 8, layer.docY + layer.h - 8, at + 0.15, 0.8);
+      task(agent.ti, layer.docX + layer.w / 2, layer.docY + layer.h / 2, at, SCAN * 0.8 + REVEAL);
+      task(partner.ti, layer.docX + 8, layer.docY + layer.h - 8, at + 0.15, SCAN * 0.8 + REVEAL);
 
       tl.call(() => { drawBox(layer, layer.id, at + 0.5, SCAN + REVEAL * 0.5); SFX.blip(); }, null, at + 0.5);
       reveal(layer, at + SCAN * 0.8, REVEAL);
@@ -589,8 +601,9 @@ function buildTimeline() {
         const T = t0 + i * 0.4;
 
         tl.call(() => { lightDot(agent.id, true); setActivity(agent, frame); }, null, T);
-        flyTo(agent, frame.docX + frame.w / 2, frame.docY + frame.h / 2, T, 0.8);
-        flyTo(partner, frame.docX + 8, frame.docY + 8, T + 0.15, 0.8);
+        const cardWork = 0.95 + kids.length * 0.18 + 0.45;
+        task(agent.ti, frame.docX + frame.w / 2, frame.docY + frame.h / 2, T, cardWork);
+        task(partner.ti, frame.docX + 8, frame.docY + 8, T + 0.15, cardWork);
         tl.call(() => { drawBox(frame, frame.id, T + 0.45, 0.5 + kids.length * 0.18 + 0.5); SFX.blip(); }, null, T + 0.45);
         reveal(frame, T + 0.5, 0.55);                       // card background + border first
         kids.forEach((k, c) => {                             // then inside: image, title, tags, link…
@@ -619,39 +632,139 @@ function buildTimeline() {
     const sentinel = agents[14];
     const vAt = cursor + 0.1;
     tl.call(() => lightDot(sentinel.id, true), null, vAt);
-    flyTo(sentinel, sectionEls[sIdx].docX + 120, sectionEls[sIdx].docY + 60, vAt, 0.7);
+    task(14, sectionEls[sIdx].docX + 120, sectionEls[sIdx].docY + 60, vAt, VERIFY);
     verify(sec, vAt);
     tl.call(() => lightDot(sentinel.id, false), null, vAt + VERIFY);
     cursor += VERIFY + GAP;
   });
 
-  // FINALE: Sentinel sweeps, the ring gathers, agents exit, handover.
-  tl.addLabel("finale", cursor);
-  tl.call(() => SFX.sting(), null, cursor);
-  const last = sectionEls[sectionEls.length - 1];
-  flyTo(agents[14], last.docX + 200, last.docY + 80, cursor, 1.0);
-  cursor += FINALE * 0.6;
-  ringExit(cursor);
-  cursor += FINALE * 0.4 + 0.6;
-  tl.call(finish, null, cursor);
+  // ===== coordinated handover: dispatch + idle enter/exit flights =====
+  // Runs after the whole tour is timed, so every agent knows its first task
+  // and can break from the orbit straight toward it (or to an off-screen
+  // park if the first task is far off).
+  const finaleAt = cursor;
+  scheduleAgentFlights(breakAt, finaleAt);
+
+  // ===== FINALE: sting, all 15 gather into the S, hold, spread out =====
+  // The sentinel's last verify above is the final inspection; every layer
+  // is already at its completed state by now.
+  tl.addLabel("finale", finaleAt);
+  tl.call(() => SFX.sting(), null, finaleAt);
+  finaleGather(finaleAt + 0.15);
+  tl.call(finish, null, finaleAt + FINALE + 0.4);
 
   doneTimes.sort((a, b) => a - b);
 }
 
-// Finale: all 15 agents gather into a ring, hold, then exit in staggered
-// curved paths.
-function ringExit(at) {
+// One park point per task: the nearest screen edge, aligned with the task's
+// viewport height so idle agents wait OUT of sight, not in the way.
+function parkFor(e) {
   const vw = window.innerWidth, vh = window.innerHeight;
-  const cx = vw / 2, cy = vh / 2, R = Math.min(vw, vh) * 0.28;
+  const vy = e.y - scrollAt(e.t);
+  const px = e.x < vw / 2 ? -70 : vw + 70;
+  return [px, clamp(vy, 110, vh - 110)];
+}
+
+// Central agent-flight scheduler (requirement: no frozen arrows, no idle
+// wandering, no overlapping paths).
+//   - dispatch: at the break, every arrow leaves the orbit on its own silk
+//     cubic toward its FIRST real task — or to an off-screen park when that
+//     task is far away, where it stays hidden until needed.
+//   - between tasks: a gap >= IDLE_GAP means the agent exits to the edge
+//     right after its previous work and re-enters on a curve just in time;
+//     smaller gaps get a short silk re-aim so the agent slides between
+//     stations instead of lingering.
+//   - flights chain lazily (start captured at launch), never overlap in time
+//     for the same agent, and use each agent's own speed/bow identity.
+function scheduleAgentFlights(breakAt, finaleAt) {
   agents.forEach((a, i) => {
-    const ang = (i / AGENTS.length) * Math.PI * 2 - Math.PI / 2;
-    flyTo(a, cx + Math.cos(ang) * R, cy + Math.sin(ang) * R, at, 0.9);
+    const evts = agentEvents[i].slice().sort((p, q) => p.t - q.t);
+    if (!evts.length) return;
+    const sign = i % 2 ? -1 : 1;
+    const last = evts[evts.length - 1];
+
+    // -- dispatch: leave the circle on the break
+    const e0 = evts[0];
+    const delay = breakAt + i * 0.045;
+    let prevFree;
+    if (e0.t - ENTER - delay >= 2.0) {
+      // first task is far: break to the off-screen park, wait hidden,
+      // then curve in just in time for the task.
+      const p = parkFor(e0);
+      curveTo(a, p[0], p[1], delay, 0.9, -sign, 110, "silk");
+      flightTo(a, e0.x, e0.y, e0.t - ENTER, ENTER, sign, 80, "silk");
+      prevFree = e0.t;
+    } else {
+      // first task is near: straight from the orbit slot to the task.
+      flightTo(a, e0.x, e0.y, delay, clamp(e0.t - 0.15 - delay, 0.6, 2.4), sign, 90, "silk");
+      prevFree = e0.t - 0.15;
+    }
+
+    // -- between tasks
+    let lastEnd = e0.t + e0.work;
+    for (let k = 1; k < evts.length; k++) {
+      const e = evts[k];
+      const gap = e.t - lastEnd;
+      if (gap >= IDLE_GAP) {
+        // idle: exit to the edge after the previous work, stay hidden.
+        const p = parkFor(e);
+        curveTo(a, p[0], p[1], lastEnd + 0.25, EXIT_DUR, -sign, 100, "silk");
+        prevFree = lastEnd + 0.25 + EXIT_DUR;
+      }
+      const start = Math.max(prevFree, e.t - 0.55);
+      const dur = Math.max(0.15, Math.min(0.6, e.t - 0.05 - start));
+      flightTo(a, e.x, e.y, start, dur, sign, 70, "silk");
+      prevFree = start + dur;
+      lastEnd = e.t + e.work;
+    }
+
+    // -- after the LAST task, exit again so idle agents never camp on the
+    //    site; the finale re-gathers everyone from off-screen.
+    if (last.t + last.work < finaleAt - 2.0) {
+      const p = parkFor(last);
+      curveTo(a, p[0], p[1], last.t + last.work + 0.25, EXIT_DUR, -sign, 100, "silk");
+    }
   });
+}
+
+// The S monogram traced by 15 arrow positions: an upper bowl (∩) flowing
+// into a lower bowl (∪) — a serpentine S, read in the order the arrows fly.
+function sFormation() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const cx = vw / 2, cy = vh / 2;
+  const r = Math.min(vw, vh) * 0.15;
+  const top = cy - r * 0.62, bot = cy + r * 0.62;
+  const pts = [];
+  for (let k = 0; k < 8; k++) { // upper bowl: left → over the top → right
+    const th = Math.PI + (k / 7) * Math.PI;
+    pts.push({ x: cx + r * Math.cos(th), y: top + r * Math.sin(th) });
+  }
+  for (let k = 0; k < 7; k++) { // lower bowl: right → under the bottom → left
+    const th = (k / 6) * Math.PI;
+    pts.push({ x: cx + r * Math.cos(th), y: bot + r * Math.sin(th) });
+  }
+  return pts;
+}
+
+// Finale: all 15 gather into the S, hold it, then each spreads out on its
+// own curved path to a distinct point OUTSIDE the viewport. Trails clear
+// as the last arrow leaves; overlays + panel are removed by teardown in
+// finish(), after the last arrow is off-screen.
+function finaleGather(at) {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const pts = sFormation();
+  agents.forEach((a, i) => curveTo(a, pts[i].x, pts[i].y, at, 0.9, i % 2 ? -1 : 1, 34, "silk"));
+  const spreadAt = at + 0.9 + 1.1; // hold the S formation for 1.1 s
+  const exits = [
+    { x: -90, y: -90 }, { x: vw * 0.3, y: -90 }, { x: vw + 90, y: -90 },
+    { x: -90, y: vh * 0.5 }, { x: vw + 90, y: vh * 0.5 },
+    { x: -90, y: vh + 90 }, { x: vw * 0.5, y: vh + 90 }, { x: vw + 90, y: vh + 90 },
+  ];
   agents.forEach((a, i) => {
-    const outX = a.edge === "left" ? -80 : a.edge === "right" ? vw + 80 : cx;
-    const outY = a.edge === "top" ? -80 : a.edge === "bottom" ? vh + 80 : cy + 60;
-    flyTo(a, outX, outY, at + 1.1 + i * 0.05, 0.55);
+    const e = exits[i % exits.length];
+    curveTo(a, e.x, e.y, spreadAt + i * 0.045, 0.7, i % 2 ? 1 : -1, 70, "power2.in");
   });
+  tl.call(() => { if (trails) trails.clear(); }, null, spreadAt + 0.8);
 }
 
 function finish() {
@@ -670,6 +783,9 @@ function teardown(animated) {
   // Single ticker + pooled trail canvas are torn down with the overlay.
   disarmTicker();
   if (trails) { trails.destroy(); trails = null; }
+  // Kill all child timelines (scan boxes, verify marks) to prevent leaks.
+  childTLs.forEach((ct) => { try { ct.kill(); } catch {} });
+  childTLs.length = 0;
   // Release the site: un-hide layers, clear the planned scroll, re-arm Lenis.
   document.documentElement.removeAttribute("data-intro");
   document.documentElement.classList.remove("intro-interaction-lock");

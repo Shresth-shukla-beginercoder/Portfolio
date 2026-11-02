@@ -46,6 +46,9 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
+      data-layer="nav.root"
+      data-owner="10"
+      data-kind="nav"
       className={`fixed top-0 left-0 right-0 z-50 px-8 md:px-20 transition-colors duration-300 ${
         scrolled
           ? "nav-glass py-3 border-b border-[#ff5a3c]/25"
