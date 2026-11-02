@@ -1,4 +1,6 @@
-import { PROFILE } from "../data/content.js";
+import { ABOUT } from "../data/about.js";
+
+const OWNERS = { 1: 4, 2: 5, 3: 4, 4: 5, 5: 6, 6: 4 };
 
 function SectionTitle({ index, children, layer, owner }) {
   return (
@@ -13,8 +15,17 @@ export default function About() {
   return (
     <section id="about" className="px-8 md:px-20 py-28 max-w-6xl mx-auto">
       <SectionTitle index="02 / About" layer="about.title" owner="4">The Engineer</SectionTitle>
-      <div data-section-body data-layer="about.body" data-owner="5" data-kind="type">
-        <p className="text-xl leading-relaxed text-gray-300 max-w-3xl">{PROFILE.about}</p>
+      <div data-section-body className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
+        {Object.entries(ABOUT).map(([key, block]) => {
+          const num = parseInt(key.replace("s", ""), 10);
+          const layer = `about.s${num}`;
+          return (
+            <div key={key} data-layer={layer} data-owner={OWNERS[num]} data-kind="type" className="border border-white/10 bg-[#10131b] p-6">
+              <h3 className="text-lg font-bold text-[#ff5a3c] mb-3">{block.title}</h3>
+              <p className="text-gray-300 text-sm leading-relaxed">{block.body}</p>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
