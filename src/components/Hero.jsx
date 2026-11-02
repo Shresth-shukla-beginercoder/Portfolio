@@ -70,6 +70,13 @@ export default function Hero() {
               data-kind="image"
               className="relative w-full aspect-[4/5] overflow-hidden"
             >
+              {/* Base portrait image - guaranteed visible */}
+              <img
+                src={PROFILE.photo}
+                alt="Shresth Shukla"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+
               <PortraitParticles imageSrc={PROFILE.photo} layer="hero.portrait" />
               {/* Subtle vignette overlay (preserved) */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#05060a] via-transparent to-transparent opacity-60 pointer-events-none" />

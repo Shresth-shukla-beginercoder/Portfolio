@@ -9,7 +9,7 @@ import { createContext, useContext, useState, useCallback } from 'react';
 const ConstructionContext = createContext({
   layerStates: {},
   setLayerState: () => {},
-  getLayerState: () => 'hidden',
+  getLayerState: () => 'active',
 });
 
 export function ConstructionProvider({ children }) {
@@ -23,7 +23,8 @@ export function ConstructionProvider({ children }) {
   }, []);
 
   const getLayerState = useCallback((layerId) => {
-    return layerStates[layerId] || 'hidden';
+    // Default to 'active' to ensure content is visible if not managed by construction agent
+    return layerStates[layerId] || 'active';
   }, [layerStates]);
 
   return (

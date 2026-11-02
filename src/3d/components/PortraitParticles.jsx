@@ -7,42 +7,27 @@ import { PORTRAIT_PARTICLES, prefersReducedMotion } from "../config";
 /**
  * PortraitParticles — signature 3D particle disintegration/assembly effect.
  *
- * This is the ONLY WebGL canvas in the entire 3D system. Everything else uses
- * CSS 3D transforms for efficiency.
- *
- * States:
- *  - "scattered": particles off-screen, ready to assemble
- *  - "assembling": flying toward correct positions
- *  - "complete": stable portrait, fully assembled
- *  - "disintegrating": breaking apart, moving outward
- *
- * Scroll-aware: disintegrates when scrolling away, reassembles when returning.
- * Hover: subtle parallax + lighting changes.
- * Construction: Agent 7 builds during intro.
+ * Architecture (robust):
+ * 1. Base Layer: Real <img> in Hero.jsx (guaranteed visible).
+ * 2. Overlay Layer: WebGL canvas that renders the disintegration/assembly animation.
  */
 function PortraitParticles({ imageSrc, layer }) {
   const containerRef = useRef(null);
   const [isInView, setIsInView] = useState(false);
   const state = useConstructionState(layer);
 
-  // Intersection observer for viewport tracking
   useEffect(() => {
     if (!containerRef.current) return;
-
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsInView(entry.isIntersecting);
-      },
+      ([entry]) => setIsInView(entry.isIntersecting),
       { threshold: 0.3 }
     );
-
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
 
-  // Particle state machine based on construction + scroll
   const particleState = useMemo(() => {
-    if (prefersReducedMotion) return "complete"; // Static portrait
+    if (prefersReducedMotion) return "complete";
     if (state === "hidden") return "scattered";
     if (state === "revealing") return "assembling";
     if (state === "active" && isInView) return "complete";
@@ -50,32 +35,23 @@ function PortraitParticles({ imageSrc, layer }) {
     return "complete";
   }, [state, isInView]);
 
-  if (prefersReducedMotion) {
-    // Fallback: static image with CSS depth
-    return (
-      <div ref={containerRef} className="relative w-full aspect-[4/5]">
-        <img
-          src={imageSrc}
-          alt="Portrait"
-          className="w-full h-full object-cover object-[center_20%]"
-          style={{
-            filter: "grayscale(100%) contrast(1.15) brightness(1.0)",
-          }}
-        />
-      </div>
-    );
-  }
+  // Overlay is visible only during a live transition; hidden when stable.
+  const overlayVisible = particleState !== "complete";
 
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-[4/5] overflow-hidden"
-      style={{ background: "#05060a" }}
+      className="absolute inset-0 overflow-hidden pointer-events-none"
+      style={{
+        opacity: overlayVisible ? 1 : 0,
+        transition: "opacity 0.6s ease",
+      }}
     >
       <Canvas
         camera={{ position: [0, 0, 500], fov: 45, near: 1, far: 2000 }}
-        gl={{ antialias: false, alpha: false }}
+        gl={{ antialias: false, alpha: true }}
         dpr={[1, 1.5]}
+        style={{ background: "transparent" }}
       >
         <ParticleSystem imageSrc={imageSrc} targetState={particleState} />
       </Canvas>
@@ -84,137 +60,140 @@ function PortraitParticles({ imageSrc, layer }) {
 }
 
 /**
- * ParticleSystem — the core Three.js mesh.
- *
- * Uses InstancedMesh for efficiency (~3000 particles, one draw call).
- * Each particle is a small quad with correct UV coordinates from the portrait.
+ * ParticleSystem — InstancedMesh of texture quads tiling the canvas.
+ * Now maps UVs precisely so each quad is a piece of the photo.
  */
 function ParticleSystem({ imageSrc, targetState }) {
   const meshRef = useRef();
-  const textureRef = useRef();
+  const [texture, setTexture] = useState(null);
   const { viewport } = useThree();
 
-  // Load portrait texture
   useEffect(() => {
     const loader = new THREE.TextureLoader();
-    loader.load(imageSrc, (texture) => {
-      textureRef.current = texture;
+    loader.load(imageSrc, (t) => {
+      t.minFilter = THREE.LinearFilter;
+      setTexture(t);
     });
   }, [imageSrc]);
 
-  // Particle grid: divide portrait into NxN fragments
-  const { gridSize, particleData } = useMemo(() => {
-    const gridSize = PORTRAIT_PARTICLES.gridSize;
+  const gridSize = PORTRAIT_PARTICLES.gridSize;
+  const particleData = useMemo(() => {
     const data = [];
+    const pW = viewport.width / gridSize;
+    const pH = viewport.height / gridSize;
 
     for (let row = 0; row < gridSize; row++) {
       for (let col = 0; col < gridSize; col++) {
-        // Target position: where this particle belongs in the complete portrait
-        const x = (col / gridSize - 0.5) * viewport.width * 0.7;
-        const y = (0.5 - row / gridSize) * viewport.height * 0.9;
+        // Position
+        const x = -viewport.width / 2 + (col + 0.5) * pW;
+        const y = viewport.height / 2 - (row + 0.5) * pH;
 
-        // Scattered position: random offset around portrait bounds
-        const scatterX = x + (Math.random() - 0.5) * PORTRAIT_PARTICLES.scatterRadius;
-        const scatterY = y + (Math.random() - 0.5) * PORTRAIT_PARTICLES.scatterRadius;
-        const scatterZ = (Math.random() - 0.5) * 100;
+        // Scatter
+        const sx = x + (Math.random() - 0.5) * 500;
+        const sy = y + (Math.random() - 0.5) * 500;
+        const sz = (Math.random() - 0.5) * 300;
 
-        // UV coordinates for texture mapping
-        const u = col / gridSize;
-        const v = row / gridSize;
+        // UV mapping - for the custom shader
+        const uvX = col / gridSize;
+        const uvY = 1 - (row + 1) / gridSize;
 
         data.push({
           targetPos: [x, y, 0],
-          scatterPos: [scatterX, scatterY, scatterZ],
-          uv: [u, v],
-          delay: Math.random() * 0.3, // Stagger assembly
+          scatterPos: [sx, sy, sz],
+          uvOffset: [uvX, uvY]
         });
       }
     }
+    return data;
+  }, [viewport, gridSize]);
 
-    return { gridSize, particleData: data };
-  }, [viewport]);
-
-  // Geometry: one small quad per particle
-  const geometry = useMemo(() => {
-    const size = PORTRAIT_PARTICLES.fragmentSize;
-    const geom = new THREE.PlaneGeometry(size, size);
-    return geom;
-  }, []);
-
-  // Material: use portrait texture, per-instance UVs
+  // Custom ShaderMaterial to handle per-instance UVs
   const material = useMemo(() => {
-    return new THREE.MeshBasicMaterial({
-      map: textureRef.current,
+    if (!texture) return null;
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        map: { value: texture },
+        gridSize: { value: gridSize }
+      },
+      vertexShader: `
+        attribute vec2 uvOffset;
+        varying vec2 vUv;
+        void main() {
+          vUv = uv + uvOffset;
+          // uv is standard plane UV [0,1], scale it down and offset
+          // This shader is a bit simplified. In a real scenario we'd do more.
+          vUv = (uv / float(${gridSize})) + uvOffset;
+          gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D map;
+        varying vec2 vUv;
+        void main() {
+          gl_FragColor = texture2D(map, vUv);
+        }
+      `,
       transparent: true,
       side: THREE.DoubleSide,
+      depthWrite: false,
     });
-  }, [textureRef.current]);
+  }, [texture, gridSize]);
 
-  // Animation state
-  const stateRef = useRef({
-    current: "scattered",
-    progress: 0, // 0 = start, 1 = end
-  });
+  // Geometry + Instanced attributes
+  const geometry = useMemo(() => {
+    const g = new THREE.PlaneGeometry(viewport.width / gridSize, viewport.height / gridSize);
 
-  useFrame((state, delta) => {
-    if (!meshRef.current || !textureRef.current) return;
+    // Add UV offset attribute
+    const uvOffsets = new Float32Array(particleData.length * 2);
+    particleData.forEach((p, i) => {
+      uvOffsets[i * 2] = p.uvOffset[0];
+      uvOffsets[i * 2 + 1] = p.uvOffset[1];
+    });
+    g.setAttribute('uvOffset', new THREE.InstancedBufferAttribute(uvOffsets, 2));
 
-    const { current, progress } = stateRef.current;
+    return g;
+  }, [viewport, gridSize, particleData]);
+
+  // State
+  const stateRef = useRef({ current: "scattered", progress: 0 });
+
+  useFrame((_, delta) => {
     const mesh = meshRef.current;
-    const dummy = new THREE.Object3D();
+    if (!mesh || !texture) return;
 
-    // Update material texture
-    if (material.map !== textureRef.current) {
-      material.map = textureRef.current;
-      material.needsUpdate = true;
-    }
-
-    // State transition logic
-    if (targetState !== current) {
+    if (targetState !== stateRef.current.current) {
       stateRef.current.current = targetState;
       stateRef.current.progress = 0;
     }
 
-    // Advance animation progress
-    let speed = 1.0;
-    if (targetState === "assembling") speed = 1 / PORTRAIT_PARTICLES.assemblyDuration;
-    if (targetState === "disintegrating") speed = 1 / PORTRAIT_PARTICLES.disintegrationDuration;
+    const speed = targetState === "assembling" ? 1/2.5 : 1/2.0;
+    stateRef.current.progress = Math.min(1, stateRef.current.progress + delta * speed);
 
-    stateRef.current.progress = Math.min(1, progress + delta * speed);
     const t = stateRef.current.progress;
-
-    // Easing function (expo out)
     const ease = 1 - Math.pow(1 - t, 3);
 
-    // Update each particle instance
-    particleData.forEach((particle, i) => {
-      const [tx, ty, tz] = particle.targetPos;
-      const [sx, sy, sz] = particle.scatterPos;
+    const dummy = new THREE.Object3D();
 
-      let x, y, z, opacity;
+    particleData.forEach((p, i) => {
+      const [tx, ty, tz] = p.targetPos;
+      const [sx, sy, sz] = p.scatterPos;
 
-      if (targetState === "scattered" || targetState === "disintegrating") {
-        // Move toward scattered position
-        x = tx + (sx - tx) * ease;
-        y = ty + (sy - ty) * ease;
-        z = tz + (sz - tz) * ease;
-        opacity = 1 - ease;
-      } else if (targetState === "assembling") {
-        // Move toward target position
+      let x, y, z, s;
+
+      if (targetState === "assembling") {
         x = sx + (tx - sx) * ease;
         y = sy + (ty - sy) * ease;
         z = sz + (tz - sz) * ease;
-        opacity = ease;
+        s = Math.max(0.0001, ease);
       } else {
-        // Complete: stable at target
-        x = tx;
-        y = ty;
-        z = tz;
-        opacity = 1;
+        x = tx + (sx - tx) * ease;
+        y = ty + (sy - ty) * ease;
+        z = tz + (sz - tz) * ease;
+        s = Math.max(0.0001, 1 - ease);
       }
 
       dummy.position.set(x, y, z);
-      dummy.scale.set(opacity, opacity, opacity);
+      dummy.scale.set(s, s, 1);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     });
@@ -222,12 +201,9 @@ function ParticleSystem({ imageSrc, targetState }) {
     mesh.instanceMatrix.needsUpdate = true;
   });
 
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, material, particleData.length]}
-    />
-  );
+  if (!texture || !material) return null;
+
+  return <instancedMesh ref={meshRef} args={[geometry, material, particleData.length]} />;
 }
 
 export default PortraitParticles;

@@ -676,7 +676,17 @@ function buildTimeline() {
   tl.addLabel("finale", finaleAt);
   tl.call(() => SFX.sting(), null, finaleAt);
   finaleGather(finaleAt + 0.15);
-  tl.call(finish, null, finaleAt + FINALE + 0.4);
+
+  // NEW: Automatic smooth scroll to top after the finale (once all arrows and
+  // overlays have dispersed). This runs after spreadAt + exits are scheduled.
+  const spreadAt = finaleAt + 0.15 + 0.9 + 1.1; // hold S formation for 1.1s
+  tl.to(window, {
+    scrollTo: { y: 0, autoKill: false },
+    duration: 1.2,
+    ease: "power3.inOut"
+  }, spreadAt + 0.8); // Start scroll after arrows have begun to exit
+
+  tl.call(finish, null, finaleAt + FINALE + 1.6); // Add delay for the scroll
 
   doneTimes.sort((a, b) => a - b);
 }
