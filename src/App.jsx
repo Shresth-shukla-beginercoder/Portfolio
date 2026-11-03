@@ -1,5 +1,6 @@
 import { ConstructionProvider } from "./3d/ConstructionContext.jsx";
 import SceneCanvas from "./3d/SceneCanvas.jsx";
+import DragonExperience from "./3d/dragon/DragonExperience.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Hero from "./components/Hero.jsx";
 import About from "./components/About.jsx";
@@ -14,7 +15,9 @@ import Footer from "./components/Footer.jsx";
 function App() {
   return (
     <ConstructionProvider>
-      <SceneCanvas />
+      <SceneCanvas>
+          <DragonExperience />
+        </SceneCanvas>
       <div className="bg-[#05060a] text-[#f2efe9] min-h-screen">
         <Navbar />
         <main>

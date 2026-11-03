@@ -34,7 +34,7 @@ function Timeline3D({ entries, children }) {
 /**
  * TimelineEntry3D — individual experience card along the timeline.
  */
-function TimelineEntry3D({ entry, index, layer }) {
+function TimelineEntry3D({ entry, index, layer, children }) {
   const state = useConstructionState(layer);
   const entryRef = useRef(null);
 
@@ -82,7 +82,11 @@ function TimelineEntry3D({ entry, index, layer }) {
           transform: "translateZ(8px)",
         }}
       />
-      {entry.children || (
+      {/* Content. The construction-controlled node (data-layer) is passed as
+          children by Experience.jsx; without it the entry would mount outside
+          the construction registry and stay visible before its agent builds it.
+          Falls back to the inline card when no children are provided. */}
+      {children || entry.children || (
         <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 border-l-2 border-[#ff5a3c]/40 pl-6">
           <div>
             <p className="font-mono text-xs text-[#ff5a3c]">{entry.period}</p>
