@@ -2,6 +2,12 @@ import { SOCIALS } from "../data/content.js";
 import SignatureAnimation from "./SignatureAnimation.jsx";
 import ContactCard3D from "../3d/components/ContactCard3D.jsx";
 
+// Opens a Gmail compose window pre-addressed to the owner, in a new tab, so a
+// visitor can mail you directly regardless of their local mail client.
+const GMAIL_COMPOSE = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(
+  SOCIALS.email
+)}&su=${encodeURIComponent("Let's connect")}`;
+
 export default function Contact() {
   return (
     <section id="contact" className="px-8 md:px-20 py-28 max-w-6xl mx-auto">
@@ -16,7 +22,7 @@ export default function Contact() {
             the line is open.
           </p>
           <div className="flex flex-wrap gap-4 mb-16">
-            <a href={`mailto:${SOCIALS.email}`} data-layer="contact.email" data-owner="11" data-kind="button" className="btn-primary" data-hoverable>{SOCIALS.email}</a>
+            <a href={GMAIL_COMPOSE} target="_blank" rel="noopener noreferrer" data-layer="contact.email" data-owner="11" data-kind="button" className="btn-primary" data-hoverable>{SOCIALS.email}</a>
             <a href={SOCIALS.github} target="_blank" rel="noreferrer" data-layer="contact.github" data-owner="10" data-kind="nav" className="btn-ghost" data-hoverable>GitHub</a>
             <a href={SOCIALS.linkedin} target="_blank" rel="noreferrer" data-layer="contact.linkedin" data-owner="10" data-kind="nav" className="btn-ghost" data-hoverable>LinkedIn</a>
           </div>
