@@ -27,6 +27,10 @@ function AppWithBridge() {
 }
 
 const root = document.getElementById("root");
+const params = new URLSearchParams(location.search);
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ===== App (construction + intro + smooth scroll) =====
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <AppWithBridge />
@@ -34,8 +38,6 @@ ReactDOM.createRoot(root).render(
 );
 
 registerGSAP();
-
-const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Smooth scrolling (disabled for reduced motion or coarse pointers)
 let lenis = null;
@@ -80,7 +82,6 @@ function bootAmbient() {
   initCursor();
 }
 
-const params = new URLSearchParams(location.search);
 // The 15-agent build runs on every reload; only reduced-motion or ?intro=0 skip it.
 if (reducedMotion || params.get("intro") === "0") {
   bootAfterIntro();
