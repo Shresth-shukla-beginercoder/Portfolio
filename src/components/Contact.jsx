@@ -6,7 +6,7 @@ export default function Contact() {
   return (
     <section id="contact" className="px-8 md:px-20 py-28 max-w-6xl mx-auto">
       <div data-section-title data-layer="contact.title" data-owner="4" data-kind="type" className="mb-12">
-        <span className="text-[#ff5a3c] text-sm tracking-[0.4em]">08 / Handover</span>
+        <span className="text-[#ff5a3c] text-sm tracking-[0.4em]">09 / Handover</span>
         <h2 className="text-4xl md:text-5xl font-black tracking-tight">Contact</h2>
       </div>
       <div data-section-body>

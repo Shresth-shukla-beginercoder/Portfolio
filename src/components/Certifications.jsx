@@ -10,7 +10,7 @@ export default function Certifications() {
   return (
     <section id="certifications" className="px-8 md:px-20 py-28 max-w-6xl mx-auto">
       <div data-section-title data-layer="certifications.title" data-owner="4" data-kind="type" className="mb-12">
-        <span className="text-[#ff5a3c] text-sm tracking-[0.4em]">06 / Credentialed</span>
+        <span className="text-[#ff5a3c] text-sm tracking-[0.4em]">07 / Credentialed</span>
         <h2 className="text-4xl md:text-5xl font-black tracking-tight">Certifications</h2>
       </div>
       <div data-section-body className="grid grid-cols-1 md:grid-cols-2 gap-6">

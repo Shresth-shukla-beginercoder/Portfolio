@@ -134,6 +134,8 @@ export const NAV = [
   { id: "skills", label: "Skills" },
   { id: "projects", label: "Projects" },
   { id: "experience", label: "Experience" },
+  { id: "resume", label: "Resume" },
   { id: "certifications", label: "Certifications" },
+  { id: "achievements", label: "Achievements" },
   { id: "contact", label: "Contact" },
 ];

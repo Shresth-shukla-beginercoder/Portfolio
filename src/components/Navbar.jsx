@@ -2,6 +2,26 @@ import { useEffect, useRef, useState } from "react";
 import { NAV, PROFILE } from "../data/content.js";
 import { Menu, X } from "lucide-react";
 
+// Smooth, Lenis-driven section navigation. Native `#anchor` clicks jump
+// instantly (feels "odd" next to Lenis's silky scrolling), so we intercept
+// same-page anchor links and route them through Lenis when it owns the page.
+// Falls back to native smooth scrolling when Lenis is absent (reduced motion /
+// ?intro=0 skip path). Header offset keeps the target clear of the sticky nav.
+function smoothScrollTo(e, id) {
+  const el = document.getElementById(id);
+  if (!el) return; // unknown id: let the browser handle it
+  e.preventDefault();
+  const lenis = window.__lenis;
+  if (lenis) {
+    lenis.scrollTo(el, { offset: -70, duration: 1.2 });
+  } else {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
+  }
+  // Keep the URL hash in sync without triggering a native jump.
+  if (history.replaceState) history.replaceState(null, "", `#${id}`);
+}
+
 export default function Navbar() {
   const [active, setActive] = useState("hero");
   const [scrolled, setScrolled] = useState(false);
@@ -66,6 +86,7 @@ export default function Navbar() {
         {/* Logo - elegant serif */}
         <a
           href="#hero"
+          onClick={(e) => smoothScrollTo(e, "hero")}
           data-layer="nav.logo"
           data-owner="10"
           data-kind="nav"
@@ -91,6 +112,7 @@ export default function Navbar() {
             >
               <a
                 href={`#${n.id}`}
+                onClick={(e) => smoothScrollTo(e, n.id)}
                 data-hoverable
                 className={`nav-link relative text-gray-400 transition-colors hover:text-[#ff5a3c] ${
                   active === n.id ? "text-[#ff5a3c] nav-active" : ""
@@ -105,6 +127,7 @@ export default function Navbar() {
         {/* Let's Talk button (desktop) */}
         <a
           href="#contact"
+          onClick={(e) => smoothScrollTo(e, "contact")}
           data-layer="nav.lets-talk"
           data-owner="10"
           data-kind="button"
@@ -140,7 +163,10 @@ export default function Navbar() {
             <li key={n.id}>
               <a
                 href={`#${n.id}`}
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  smoothScrollTo(e, n.id);
+                  setOpen(false);
+                }}
                 data-hoverable
                 className={`nav-link relative block text-gray-400 transition-colors hover:text-[#ff5a3c] ${
                   active === n.id ? "text-[#ff5a3c] nav-active" : ""
@@ -153,7 +179,10 @@ export default function Navbar() {
           <li className="mt-4 pt-4 border-t border-white/10">
             <a
               href="#contact"
-              onClick={() => setOpen(false)}
+              onClick={(e) => {
+                smoothScrollTo(e, "contact");
+                setOpen(false);
+              }}
               data-hoverable
               className="block px-4 py-2 text-xs font-mono tracking-widest uppercase text-white border border-[#ff5a3c]/60 rounded text-center transition-all duration-300 hover:bg-[#ff5a3c]/10 hover:border-[#ff5a3c]"
             >

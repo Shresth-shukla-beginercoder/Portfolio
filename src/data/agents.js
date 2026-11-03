@@ -30,6 +30,7 @@ export const SECTIONS = [
   { id: "skills",         name: "Technical Skills" },
   { id: "projects",       name: "Featured Projects" },
   { id: "experience",     name: "Experience" },
+  { id: "resume",         name: "Resume" },
   { id: "certifications", name: "Certifications" },
   { id: "achievements",   name: "Achievements" },
   { id: "contact",        name: "Contact" },
