@@ -67,7 +67,7 @@ export const PROJECTS = [
 
 // Levels are approximate — tune to taste. Grounded in the skills you listed.
 export const SKILLS = [
-  { name: "Frontend · HTML · CSS · JavaScript · React", level: 85 },
+  { name: "Frontend · HTML · CSS · JavaScript · React · Tailwind CSS", level: 89 },
   { name: "Backend · Node.js · Express · REST APIs · Flask", level: 82 },
   { name: "Database · PostgreSQL · SQL", level: 78 },
   { name: "Languages · JavaScript · Python · C++", level: 78 },
